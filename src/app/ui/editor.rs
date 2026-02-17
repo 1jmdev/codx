@@ -18,9 +18,9 @@ impl App {
                     .unwrap_or(path)
                     .to_string_lossy()
                     .replace('\\', "/");
-                format!(" Editor: {}{} ", label, marker)
+                format!(" Codx: {}{} ", label, marker)
             }
-            None => String::from(" Editor: [select a file from tree] "),
+            None => String::from(" Codx: [select a file from tree] "),
         };
 
         let border_style = if self.focus == Focus::Editor {

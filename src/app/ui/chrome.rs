@@ -67,7 +67,7 @@ impl App {
         };
 
         let content = format!(
-            " {focus} | Ctrl+P Files | Ctrl+Space/F1 Commands | Ctrl+B Sidebar | Esc Tree | Ctrl+S Save | Ctrl+Q Quit | {}",
+            " Codx | {focus} | Ctrl+P Files | Ctrl+Space/F1 Commands | Ctrl+B Sidebar | Esc Tree | Ctrl+S Save | Ctrl+Q Quit | {}",
             self.status
         );
 
