@@ -31,6 +31,7 @@ impl App {
 
         fs::write(&path, self.lines.join("\n"))?;
         self.dirty = false;
+        self.notify_lsp_save();
         self.status = format!("Saved {}", path.display());
         Ok(())
     }

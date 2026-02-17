@@ -7,10 +7,14 @@ use std::{
 };
 
 use lsp_types::{
-    DidChangeTextDocumentParams, DidOpenTextDocumentParams, InitializeParams, InitializedParams,
-    PublishDiagnosticsParams, TextDocumentContentChangeEvent, TextDocumentItem,
-    Uri, VersionedTextDocumentIdentifier, WorkspaceFolder,
-    notification::{DidChangeTextDocument, DidOpenTextDocument, Initialized, PublishDiagnostics},
+    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    InitializeParams, InitializedParams, PublishDiagnosticsParams,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
+    VersionedTextDocumentIdentifier, WorkspaceFolder,
+    notification::{
+        DidChangeTextDocument, DidOpenTextDocument, DidSaveTextDocument, Initialized,
+        PublishDiagnostics,
+    },
     notification::Notification,
     request::{Initialize, Request},
 };
@@ -25,6 +29,7 @@ use super::{
 pub(crate) enum ServerEvent {
     Diagnostics {
         path: PathBuf,
+        version: Option<i32>,
         diagnostics: Vec<lsp_types::Diagnostic>,
     },
 }
@@ -72,6 +77,7 @@ impl LspClient {
                 {
                     let _ = tx.send(ServerEvent::Diagnostics {
                         path,
+                        version: payload.version,
                         diagnostics: payload.diagnostics,
                     });
                 }
@@ -115,7 +121,7 @@ impl LspClient {
         Ok(())
     }
 
-    pub(crate) fn open_document(&mut self, path: &Path, text: String) {
+    pub(crate) fn open_document(&mut self, path: &Path, text: String) -> Option<i32> {
         if let Some(uri) = path_to_uri(path) {
             self.open_uri = Some(uri.clone());
             self.version = 1;
@@ -131,15 +137,18 @@ impl LspClient {
                 DidOpenTextDocument::METHOD,
                 serde_json::to_value(params).unwrap_or(Value::Null),
             );
+            return Some(self.version);
         }
+
+        None
     }
 
-    pub(crate) fn did_change(&mut self, path: &Path, text: String) {
+    pub(crate) fn did_change(&mut self, path: &Path, text: String) -> i32 {
         let uri = match &self.open_uri {
             Some(uri) => uri.clone(),
             None => match path_to_uri(path) {
                 Some(uri) => uri,
-                None => return,
+                None => return self.version,
             },
         };
 
@@ -158,6 +167,28 @@ impl LspClient {
 
         let _ = self.send_notification(
             DidChangeTextDocument::METHOD,
+            serde_json::to_value(params).unwrap_or(Value::Null),
+        );
+
+        self.version
+    }
+
+    pub(crate) fn did_save(&mut self, path: &Path) {
+        let uri = match &self.open_uri {
+            Some(uri) => uri.clone(),
+            None => match path_to_uri(path) {
+                Some(uri) => uri,
+                None => return,
+            },
+        };
+
+        let params = DidSaveTextDocumentParams {
+            text_document: TextDocumentIdentifier { uri },
+            text: None,
+        };
+
+        let _ = self.send_notification(
+            DidSaveTextDocument::METHOD,
             serde_json::to_value(params).unwrap_or(Value::Null),
         );
     }

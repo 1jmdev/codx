@@ -52,18 +52,9 @@ impl App {
             Focus::FileTree => "FILES",
         };
 
-        let diag = self
-            .lsp
-            .first_diagnostic_for_line(self.current_file.as_ref(), self.cursor_line)
-            .unwrap_or_default();
-        let suffix = if diag.is_empty() {
-            self.status.clone()
-        } else {
-            format!("{} | LSP: {}", self.status, diag)
-        };
-
         let content = format!(
-            " {focus} | Ctrl+S Save | Ctrl+Q Quit | Tab Switch | Enter Open/Toggle | {suffix}"
+            " {focus} | Ctrl+S Save | Ctrl+Q Quit | Tab Switch | Enter Open/Toggle | {}",
+            self.status
         );
 
         frame.render_widget(

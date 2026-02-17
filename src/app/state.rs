@@ -108,6 +108,12 @@ impl App {
                 .did_change(path, self.lines.join("\n"), &mut self.status);
         }
     }
+
+    pub(crate) fn notify_lsp_save(&mut self) {
+        if let Some(path) = self.current_file.as_ref() {
+            self.lsp.did_save(path, &mut self.status);
+        }
+    }
 }
 
 pub(crate) fn rect_contains(rect: Rect, x: u16, y: u16) -> bool {

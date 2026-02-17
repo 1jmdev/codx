@@ -44,13 +44,13 @@ impl App {
             let line_index = start + row;
             let mut line_spans = Vec::new();
 
-            let has_diag = self
+            let diagnostic = self
                 .lsp
-                .line_has_diagnostic(self.current_file.as_ref(), line_index);
-            let num_color = if has_diag {
-                Color::Red
-            } else {
-                Color::DarkGray
+                .diagnostic_hint_for_line(self.current_file.as_ref(), line_index);
+            let num_color = match diagnostic {
+                Some((_, true)) => Color::Yellow,
+                Some((_, false)) => Color::Red,
+                None => Color::DarkGray,
             };
             let number = format!("{:>width$}", line_index + 1, width = number_width);
             line_spans.push(Span::styled(
@@ -65,6 +65,22 @@ impl App {
                 Style::default()
             };
             line_spans.extend(spans.into_iter().map(|span| span.patch_style(row_style)));
+            if let Some((message, is_warning)) = diagnostic {
+                let message_color = if is_warning {
+                    Color::Yellow
+                } else {
+                    Color::Red
+                };
+                line_spans.push(
+                    Span::styled(
+                        format!("  // {}", message),
+                        Style::default()
+                            .fg(message_color)
+                            .add_modifier(Modifier::ITALIC),
+                    )
+                    .patch_style(row_style),
+                );
+            }
             rendered.push(Line::from(line_spans));
         }
 
