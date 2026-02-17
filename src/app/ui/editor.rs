@@ -5,6 +5,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
+use crate::app::editor::byte_index_for_char;
 use crate::app::{App, Focus};
 
 impl App {
@@ -43,6 +44,7 @@ impl App {
         for (row, spans) in highlighted.into_iter().enumerate() {
             let line_index = start + row;
             let mut line_spans = Vec::new();
+            let selection = self.selection_cols_for_line(line_index);
 
             let diagnostic = self
                 .lsp
@@ -59,12 +61,18 @@ impl App {
             ));
             line_spans.push(Span::raw(" "));
 
-            let row_style = if line_index == self.cursor_line {
-                Style::default().bg(Color::Rgb(25, 35, 45))
-            } else {
-                Style::default()
-            };
-            line_spans.extend(spans.into_iter().map(|span| span.patch_style(row_style)));
+            let row_style = Style::default();
+            let selection_style = Style::default().bg(Color::Rgb(34, 45, 58));
+            let mut col_offset = 0;
+            for span in spans {
+                push_selected_span(
+                    &mut line_spans,
+                    span.patch_style(row_style),
+                    &mut col_offset,
+                    selection,
+                    selection_style,
+                );
+            }
             if let Some((message, is_warning)) = diagnostic {
                 let message_color = if is_warning {
                     Color::Yellow
@@ -85,5 +93,56 @@ impl App {
         }
 
         frame.render_widget(Paragraph::new(Text::from(rendered)), inner);
+    }
+}
+
+fn push_selected_span(
+    target: &mut Vec<Span<'static>>,
+    span: Span<'static>,
+    col_offset: &mut usize,
+    selection: Option<(usize, usize)>,
+    selection_style: Style,
+) {
+    let Some((sel_start, sel_end)) = selection else {
+        *col_offset += span.content.chars().count();
+        target.push(span);
+        return;
+    };
+
+    let text = span.content.into_owned();
+    let style = span.style;
+    let len = text.chars().count();
+    let start = *col_offset;
+    let end = start + len;
+    *col_offset = end;
+
+    if len == 0 || end <= sel_start || start >= sel_end {
+        target.push(Span::styled(text, style));
+        return;
+    }
+
+    let selected_start = sel_start.max(start);
+    let selected_end = sel_end.min(end);
+    let before_len = selected_start.saturating_sub(start);
+    let selected_len = selected_end.saturating_sub(selected_start);
+
+    if before_len > 0 {
+        let before_byte = byte_index_for_char(&text, before_len);
+        target.push(Span::styled(text[..before_byte].to_string(), style));
+    }
+
+    if selected_len > 0 {
+        let selected_start_byte = byte_index_for_char(&text, before_len);
+        let selected_end_byte = byte_index_for_char(&text, before_len + selected_len);
+        target.push(Span::styled(
+            text[selected_start_byte..selected_end_byte].to_string(),
+            style.patch(selection_style),
+        ));
+    }
+
+    let after_start = before_len + selected_len;
+    if after_start < len {
+        let after_start_byte = byte_index_for_char(&text, after_start);
+        target.push(Span::styled(text[after_start_byte..].to_string(), style));
     }
 }

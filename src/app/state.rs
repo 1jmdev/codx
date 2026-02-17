@@ -25,6 +25,21 @@ pub(crate) struct UiGeometry {
     pub(crate) tree_inner: Rect,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct CursorPos {
+    pub(crate) line: usize,
+    pub(crate) col: usize,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct EditorSnapshot {
+    pub(crate) lines: Vec<String>,
+    pub(crate) cursor_line: usize,
+    pub(crate) cursor_col: usize,
+    pub(crate) preferred_col: usize,
+    pub(crate) selection_anchor: Option<CursorPos>,
+}
+
 pub struct App {
     pub(crate) cwd: PathBuf,
     pub(crate) focus: Focus,
@@ -39,7 +54,10 @@ pub struct App {
     pub(crate) cursor_line: usize,
     pub(crate) cursor_col: usize,
     pub(crate) preferred_col: usize,
+    pub(crate) selection_anchor: Option<CursorPos>,
     pub(crate) editor_scroll: usize,
+    pub(crate) undo_stack: Vec<EditorSnapshot>,
+    pub(crate) redo_stack: Vec<EditorSnapshot>,
     pub(crate) dirty: bool,
     pub(crate) ui: UiGeometry,
     pub(crate) syntax: SyntaxEngine,
@@ -65,7 +83,10 @@ impl App {
             cursor_line: 0,
             cursor_col: 0,
             preferred_col: 0,
+            selection_anchor: None,
             editor_scroll: 0,
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
             dirty: false,
             ui: UiGeometry::default(),
             syntax: SyntaxEngine::new(),
