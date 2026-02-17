@@ -8,6 +8,10 @@ use crate::app::{App, Focus};
 
 impl App {
     pub(crate) fn on_key(&mut self, key: KeyEvent) {
+        if self.handle_palette_key(key) {
+            return;
+        }
+
         if self.handle_global_shortcuts(key) {
             return;
         }

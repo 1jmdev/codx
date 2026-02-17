@@ -1,6 +1,7 @@
 mod editor;
 mod input;
 mod lsp;
+mod palette;
 mod state;
 mod syntax;
 mod tree;

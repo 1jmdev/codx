@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::{App, Focus};
+use crate::app::{palette::PaletteKind, App, Focus};
 
 impl App {
     pub(super) fn handle_global_shortcuts(&mut self, key: KeyEvent) -> bool {
@@ -45,6 +45,14 @@ impl App {
                     Focus::Editor => Focus::FileTree,
                     Focus::FileTree => Focus::Editor,
                 };
+                true
+            }
+            'p' if !shift => {
+                self.open_palette(PaletteKind::Files);
+                true
+            }
+            'p' if shift => {
+                self.open_palette(PaletteKind::Commands);
                 true
             }
             _ => false,

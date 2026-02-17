@@ -21,11 +21,17 @@ impl App {
 
         self.draw_editor(frame, content[0]);
         self.draw_tree(frame, content[1]);
+        self.draw_palette(frame);
         self.draw_status(frame, vertical[1]);
         self.place_cursor(frame);
     }
 
     fn place_cursor(&self, frame: &mut ratatui::Frame) {
+        if let Some(pos) = self.palette_cursor_position(frame.area()) {
+            frame.set_cursor_position(pos);
+            return;
+        }
+
         if self.focus != Focus::Editor {
             return;
         }
@@ -53,7 +59,7 @@ impl App {
         };
 
         let content = format!(
-            " {focus} | Ctrl+S Save | Ctrl+Q Quit | Tab Switch | Enter Open/Toggle | {}",
+            " {focus} | Ctrl+P Files | Ctrl+Shift+P Commands | Ctrl+S Save | Ctrl+Q Quit | {}",
             self.status
         );
 

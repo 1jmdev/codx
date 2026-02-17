@@ -81,6 +81,14 @@ impl LspManager {
         }
     }
 
+    pub(crate) fn reload_for_file(&mut self, path: &Path, text: String, status: &mut String) {
+        self.client = None;
+        self.key = None;
+        self.diagnostics.clear();
+        self.document_versions.clear();
+        self.open_file(path, text, status);
+    }
+
     pub(crate) fn poll(&mut self, _status: &mut String) {
         let mut incoming = Vec::new();
         if let Some(client) = self.client.as_mut() {
