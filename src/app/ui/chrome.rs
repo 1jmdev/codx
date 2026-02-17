@@ -16,11 +16,19 @@ impl App {
 
         let content = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(74), Constraint::Percentage(26)])
+            .constraints(if self.sidebar_open {
+                [Constraint::Percentage(74), Constraint::Percentage(26)]
+            } else {
+                [Constraint::Percentage(100), Constraint::Length(0)]
+            })
             .split(vertical[0]);
 
         self.draw_editor(frame, content[0]);
-        self.draw_tree(frame, content[1]);
+        if self.sidebar_open {
+            self.draw_tree(frame, content[1]);
+        } else {
+            self.ui.tree_inner = Rect::default();
+        }
         self.draw_palette(frame);
         self.draw_status(frame, vertical[1]);
         self.place_cursor(frame);
@@ -59,7 +67,7 @@ impl App {
         };
 
         let content = format!(
-            " {focus} | Ctrl+P Files | Ctrl+Shift+P Commands | Ctrl+S Save | Ctrl+Q Quit | {}",
+            " {focus} | Ctrl+P Files | Ctrl+Space/F1 Commands | Ctrl+B Sidebar | Esc Tree | Ctrl+S Save | Ctrl+Q Quit | {}",
             self.status
         );
 

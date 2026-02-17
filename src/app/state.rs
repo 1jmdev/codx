@@ -43,6 +43,7 @@ pub(crate) struct EditorSnapshot {
 pub struct App {
     pub(crate) cwd: PathBuf,
     pub(crate) focus: Focus,
+    pub(crate) sidebar_open: bool,
     pub(crate) status: String,
     pub(crate) should_quit: bool,
     pub(crate) tree_items: Vec<TreeItem>,
@@ -74,6 +75,7 @@ impl App {
         let mut app = Self {
             cwd: cwd.clone(),
             focus: Focus::FileTree,
+            sidebar_open: true,
             status: String::from("Welcome. Mouse + Tab supported."),
             should_quit: false,
             tree_items: Vec::new(),

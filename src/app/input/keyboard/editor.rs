@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::editor::line_len_chars;
-use crate::app::App;
+use crate::app::{App, Focus};
 
 impl App {
     pub(super) fn handle_editor_key(&mut self, key: KeyEvent) {
@@ -46,6 +46,10 @@ impl App {
             KeyCode::Backspace => self.backspace(),
             KeyCode::Delete => self.delete(),
             KeyCode::Enter => self.insert_newline(),
+            KeyCode::Esc => {
+                self.sidebar_open = true;
+                self.focus = Focus::FileTree;
+            }
             KeyCode::Char(ch) => {
                 if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT {
                     self.insert_char(ch);

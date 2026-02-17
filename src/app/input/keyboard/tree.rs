@@ -21,7 +21,7 @@ impl App {
         }
     }
 
-    fn activate_tree_item(&mut self) {
+    pub(super) fn activate_tree_item(&mut self) {
         if self.tree_items.is_empty() {
             return;
         }
