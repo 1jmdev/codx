@@ -112,14 +112,21 @@ impl App {
             return;
         }
 
-        if self.cursor_line < self.editor_scroll {
-            self.editor_scroll = self.cursor_line;
+        let top_trigger_row = view_height / 4;
+        let bottom_trigger_row = (view_height * 3 / 4).min(view_height.saturating_sub(1));
+
+        let top_trigger_line = self.editor_scroll + top_trigger_row;
+        if self.cursor_line < top_trigger_line {
+            self.editor_scroll = self.cursor_line.saturating_sub(top_trigger_row);
         }
 
-        let bottom = self.editor_scroll + view_height - 1;
-        if self.cursor_line > bottom {
-            self.editor_scroll = self.cursor_line + 1 - view_height;
+        let bottom_trigger_line = self.editor_scroll + bottom_trigger_row;
+        if self.cursor_line > bottom_trigger_line {
+            self.editor_scroll = self.cursor_line.saturating_sub(bottom_trigger_row);
         }
+
+        let max_scroll = self.lines.len().saturating_sub(view_height);
+        self.editor_scroll = self.editor_scroll.min(max_scroll);
     }
 }
 
