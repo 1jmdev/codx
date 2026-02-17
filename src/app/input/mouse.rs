@@ -54,5 +54,6 @@ impl App {
         let col = (x.saturating_sub(self.ui.editor_inner.x) as usize).saturating_sub(number_width);
         let max_col = line_len_chars(&self.lines[self.cursor_line]);
         self.cursor_col = col.min(max_col);
+        self.preferred_col = self.cursor_col;
     }
 }

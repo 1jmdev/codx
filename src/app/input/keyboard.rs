@@ -97,8 +97,14 @@ impl App {
             KeyCode::Down => self.move_cursor_down(),
             KeyCode::Left => self.move_cursor_left(),
             KeyCode::Right => self.move_cursor_right(),
-            KeyCode::Home => self.cursor_col = 0,
-            KeyCode::End => self.cursor_col = line_len_chars(&self.lines[self.cursor_line]),
+            KeyCode::Home => {
+                self.cursor_col = 0;
+                self.preferred_col = self.cursor_col;
+            }
+            KeyCode::End => {
+                self.cursor_col = line_len_chars(&self.lines[self.cursor_line]);
+                self.preferred_col = self.cursor_col;
+            }
             KeyCode::Backspace => self.backspace(),
             KeyCode::Delete => self.delete(),
             KeyCode::Enter => self.insert_newline(),
@@ -114,14 +120,16 @@ impl App {
     fn move_cursor_up(&mut self) {
         if self.cursor_line > 0 {
             self.cursor_line -= 1;
-            self.clamp_cursor_col();
+            let max = line_len_chars(&self.lines[self.cursor_line]);
+            self.cursor_col = self.preferred_col.min(max);
         }
     }
 
     fn move_cursor_down(&mut self) {
         if self.cursor_line + 1 < self.lines.len() {
             self.cursor_line += 1;
-            self.clamp_cursor_col();
+            let max = line_len_chars(&self.lines[self.cursor_line]);
+            self.cursor_col = self.preferred_col.min(max);
         }
     }
 
@@ -132,6 +140,8 @@ impl App {
             self.cursor_line -= 1;
             self.cursor_col = line_len_chars(&self.lines[self.cursor_line]);
         }
+
+        self.preferred_col = self.cursor_col;
     }
 
     fn move_cursor_right(&mut self) {
@@ -142,5 +152,7 @@ impl App {
             self.cursor_line += 1;
             self.cursor_col = 0;
         }
+
+        self.preferred_col = self.cursor_col;
     }
 }

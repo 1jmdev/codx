@@ -14,6 +14,7 @@ impl App {
         self.lines = lines;
         self.cursor_line = 0;
         self.cursor_col = 0;
+        self.preferred_col = 0;
         self.editor_scroll = 0;
         self.dirty = false;
         self.status = format!("Opened {}", path.display());
@@ -41,6 +42,7 @@ impl App {
         let byte_index = byte_index_for_char(line, self.cursor_col);
         line.insert(byte_index, ch);
         self.cursor_col += 1;
+        self.preferred_col = self.cursor_col;
         self.dirty = true;
         self.notify_lsp_change();
     }
@@ -53,6 +55,7 @@ impl App {
         self.lines.insert(self.cursor_line + 1, right.to_string());
         self.cursor_line += 1;
         self.cursor_col = 0;
+        self.preferred_col = self.cursor_col;
         self.dirty = true;
         self.notify_lsp_change();
     }
@@ -63,6 +66,7 @@ impl App {
             let remove_at = byte_index_for_char(line, self.cursor_col - 1);
             line.remove(remove_at);
             self.cursor_col -= 1;
+            self.preferred_col = self.cursor_col;
             self.dirty = true;
             self.notify_lsp_change();
             return;
@@ -74,6 +78,7 @@ impl App {
             let prev_len = line_len_chars(&self.lines[self.cursor_line]);
             self.lines[self.cursor_line].push_str(&current);
             self.cursor_col = prev_len;
+            self.preferred_col = self.cursor_col;
             self.dirty = true;
             self.notify_lsp_change();
         }
@@ -85,6 +90,7 @@ impl App {
             let line = &mut self.lines[self.cursor_line];
             let remove_at = byte_index_for_char(line, self.cursor_col);
             line.remove(remove_at);
+            self.preferred_col = self.cursor_col;
             self.dirty = true;
             self.notify_lsp_change();
             return;
@@ -93,14 +99,10 @@ impl App {
         if self.cursor_line + 1 < self.lines.len() {
             let next = self.lines.remove(self.cursor_line + 1);
             self.lines[self.cursor_line].push_str(&next);
+            self.preferred_col = self.cursor_col;
             self.dirty = true;
             self.notify_lsp_change();
         }
-    }
-
-    pub(crate) fn clamp_cursor_col(&mut self) {
-        let max = line_len_chars(&self.lines[self.cursor_line]);
-        self.cursor_col = self.cursor_col.min(max);
     }
 
     pub(crate) fn line_number_width(&self) -> usize {
