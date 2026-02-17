@@ -1,4 +1,4 @@
-use crate::app::{editor::TAB_WIDTH, App};
+use crate::app::{App, editor::TAB_WIDTH};
 
 use super::{byte_index_for_char, leading_indent_width, line_len_chars};
 

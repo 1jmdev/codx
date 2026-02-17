@@ -1,7 +1,7 @@
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 
 use crate::app::editor::line_len_chars;
-use crate::app::{rect_contains, App, Focus};
+use crate::app::{App, Focus, rect_contains};
 
 impl App {
     pub(crate) fn on_mouse(&mut self, mouse: MouseEvent) {

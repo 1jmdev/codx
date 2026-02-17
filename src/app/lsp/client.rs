@@ -8,14 +8,14 @@ use std::{
 
 use lsp_types::{
     DidChangeTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
-    InitializeParams, InitializedParams, PublishDiagnosticsParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
-    VersionedTextDocumentIdentifier, WorkspaceFolder,
+    InitializeParams, InitializedParams, PublishDiagnosticsParams, TextDocumentContentChangeEvent,
+    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
+    WorkspaceFolder,
+    notification::Notification,
     notification::{
         DidChangeTextDocument, DidOpenTextDocument, DidSaveTextDocument, Initialized,
         PublishDiagnostics,
     },
-    notification::Notification,
     request::{Initialize, Request},
 };
 use serde_json::{Value, json};
@@ -72,7 +72,8 @@ impl LspClient {
 
                 if value.get("method").and_then(Value::as_str) == Some(PublishDiagnostics::METHOD)
                     && let Some(params) = value.get("params")
-                    && let Ok(payload) = serde_json::from_value::<PublishDiagnosticsParams>(params.clone())
+                    && let Ok(payload) =
+                        serde_json::from_value::<PublishDiagnosticsParams>(params.clone())
                     && let Some(path) = uri_to_path(&payload.uri)
                 {
                     let _ = tx.send(ServerEvent::Diagnostics {
@@ -99,8 +100,8 @@ impl LspClient {
     }
 
     fn initialize(&mut self, root: &Path) -> io::Result<()> {
-        let root_uri = path_to_uri(root)
-            .ok_or_else(|| io::Error::other("Invalid workspace path for LSP"))?;
+        let root_uri =
+            path_to_uri(root).ok_or_else(|| io::Error::other("Invalid workspace path for LSP"))?;
 
         let params = InitializeParams {
             process_id: Some(std::process::id()),

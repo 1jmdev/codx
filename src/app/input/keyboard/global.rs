@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::{palette::PaletteKind, App, Focus};
+use crate::app::{App, Focus, palette::PaletteKind};
 
 impl App {
     pub(super) fn handle_global_shortcuts(&mut self, key: KeyEvent) -> bool {

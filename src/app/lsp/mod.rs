@@ -112,12 +112,17 @@ impl LspManager {
         }
     }
 
-    fn first_diagnostic_for_line(&self, path: Option<&PathBuf>, line_idx: usize) -> Option<&Diagnostic> {
+    fn first_diagnostic_for_line(
+        &self,
+        path: Option<&PathBuf>,
+        line_idx: usize,
+    ) -> Option<&Diagnostic> {
         let path = path?;
-        let diagnostics = self
-            .diagnostics
-            .get(path)
-            .or_else(|| fs::canonicalize(path).ok().and_then(|real| self.diagnostics.get(&real)))?;
+        let diagnostics = self.diagnostics.get(path).or_else(|| {
+            fs::canonicalize(path)
+                .ok()
+                .and_then(|real| self.diagnostics.get(&real))
+        })?;
         diagnostics
             .iter()
             .find(|item| item.range.start.line as usize == line_idx)
@@ -132,7 +137,6 @@ impl LspManager {
         let is_warning = matches!(diagnostic.severity, Some(DiagnosticSeverity::WARNING));
         Some((diagnostic.message.as_str(), is_warning))
     }
-
 }
 
 fn normalize_path(path: &Path) -> PathBuf {
