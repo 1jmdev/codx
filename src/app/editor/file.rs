@@ -1,14 +1,23 @@
-use std::{fs, io, path::PathBuf};
+use std::{fs, io, io::ErrorKind, path::PathBuf};
 
 use crate::app::{App, Focus};
 
 impl App {
     pub(crate) fn open_file(&mut self, path: PathBuf) -> io::Result<()> {
-        let content = fs::read_to_string(&path)?;
-        let mut lines: Vec<String> = content.split('\n').map(|line| line.to_string()).collect();
-        if lines.is_empty() {
-            lines.push(String::new());
-        }
+        let (lines, status) = match fs::read_to_string(&path) {
+            Ok(content) => {
+                let mut lines: Vec<String> =
+                    content.split('\n').map(|line| line.to_string()).collect();
+                if lines.is_empty() {
+                    lines.push(String::new());
+                }
+                (lines, format!("Opened {}", path.display()))
+            }
+            Err(error) if error.kind() == ErrorKind::NotFound => {
+                (vec![String::new()], format!("New file {}", path.display()))
+            }
+            Err(error) => return Err(error),
+        };
 
         self.current_file = Some(path.clone());
         self.lines = lines;
@@ -20,7 +29,7 @@ impl App {
         self.undo_stack.clear();
         self.redo_stack.clear();
         self.dirty = false;
-        self.status = format!("Opened {}", path.display());
+        self.status = status;
         self.focus = Focus::Editor;
         self.lsp
             .open_file(&path, self.lines.join("\n"), &mut self.status);

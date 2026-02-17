@@ -35,13 +35,24 @@ cargo run
 
 ## Usage
 
-Launch Codx in the directory you want to edit:
+Codx supports three launch modes:
 
+Opens Codx in the current directory.
 ```bash
 codx
 ```
 
-Codx starts in the current working directory and lets you browse/open files from the sidebar and file palette.
+Opens only that file and starts with the sidebar hidden.
+```bash
+codx path/file.rs
+```
+
+Opens Codx rooted in that folder.
+```bash
+codx path/to/folder
+```
+
+In directory mode, you can browse/open files from the sidebar and file palette.
 
 ## Default Keybindings
 
