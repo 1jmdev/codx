@@ -13,7 +13,12 @@ impl App {
         let title = match &self.current_file {
             Some(path) => {
                 let marker = if self.dirty { " *" } else { "" };
-                format!(" Editor: {}{} ", path.display(), marker)
+                let label = path
+                    .strip_prefix(&self.cwd)
+                    .unwrap_or(path)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                format!(" Editor: {}{} ", label, marker)
             }
             None => String::from(" Editor: [select a file from tree] "),
         };
