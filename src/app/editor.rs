@@ -18,6 +18,8 @@ impl App {
         self.dirty = false;
         self.status = format!("Opened {}", path.display());
         self.focus = Focus::Editor;
+        self.lsp
+            .open_file(&path, self.lines.join("\n"), &mut self.status);
         Ok(())
     }
 
@@ -39,6 +41,7 @@ impl App {
         line.insert(byte_index, ch);
         self.cursor_col += 1;
         self.dirty = true;
+        self.notify_lsp_change();
     }
 
     pub(crate) fn insert_newline(&mut self) {
@@ -50,6 +53,7 @@ impl App {
         self.cursor_line += 1;
         self.cursor_col = 0;
         self.dirty = true;
+        self.notify_lsp_change();
     }
 
     pub(crate) fn backspace(&mut self) {
@@ -59,6 +63,7 @@ impl App {
             line.remove(remove_at);
             self.cursor_col -= 1;
             self.dirty = true;
+            self.notify_lsp_change();
             return;
         }
 
@@ -69,6 +74,7 @@ impl App {
             self.lines[self.cursor_line].push_str(&current);
             self.cursor_col = prev_len;
             self.dirty = true;
+            self.notify_lsp_change();
         }
     }
 
@@ -79,6 +85,7 @@ impl App {
             let remove_at = byte_index_for_char(line, self.cursor_col);
             line.remove(remove_at);
             self.dirty = true;
+            self.notify_lsp_change();
             return;
         }
 
@@ -86,6 +93,7 @@ impl App {
             let next = self.lines.remove(self.cursor_line + 1);
             self.lines[self.cursor_line].push_str(&next);
             self.dirty = true;
+            self.notify_lsp_change();
         }
     }
 
