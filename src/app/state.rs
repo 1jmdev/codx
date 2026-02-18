@@ -1,9 +1,11 @@
 use std::{collections::HashSet, io, path::PathBuf, time::Duration};
 
 use crossterm::event::{self, Event};
-use ratatui::{Terminal, layout::Rect};
+use ratatui::{layout::Rect, Terminal};
 
-use crate::app::{lsp::LspManager, palette::PaletteState, syntax::SyntaxEngine};
+use crate::app::{
+    lsp::LspManager, palette::PaletteState, search::SearchReplaceState, syntax::SyntaxEngine,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Focus {
@@ -84,6 +86,7 @@ pub struct App {
     pub(crate) palette: Option<PaletteState>,
     pub(crate) completion: Option<CompletionState>,
     pub(crate) file_picker_cache: Vec<PathBuf>,
+    pub(crate) search_replace: Option<SearchReplaceState>,
 }
 
 impl App {
@@ -117,6 +120,7 @@ impl App {
             palette: None,
             completion: None,
             file_picker_cache: Vec::new(),
+            search_replace: None,
         };
 
         app.rebuild_tree();
