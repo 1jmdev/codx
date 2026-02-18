@@ -64,9 +64,10 @@ fn launch_target() -> io::Result<(PathBuf, Option<PathBuf>)> {
     match fs::metadata(&resolved) {
         Ok(metadata) if metadata.is_dir() => Ok((resolved, None)),
         Ok(metadata) if metadata.is_file() => {
-            let project_dir = resolved.parent().map(PathBuf::from).ok_or_else(|| {
-                io::Error::new(io::ErrorKind::InvalidInput, "file has no parent")
-            })?;
+            let project_dir = resolved
+                .parent()
+                .map(PathBuf::from)
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "file has no parent"))?;
             Ok((project_dir, Some(resolved)))
         }
         Ok(_) => Err(io::Error::new(
@@ -74,9 +75,10 @@ fn launch_target() -> io::Result<(PathBuf, Option<PathBuf>)> {
             "path must be a file or directory",
         )),
         Err(error) if error.kind() == ErrorKind::NotFound => {
-            let project_dir = resolved.parent().map(PathBuf::from).ok_or_else(|| {
-                io::Error::new(io::ErrorKind::InvalidInput, "file has no parent")
-            })?;
+            let project_dir = resolved
+                .parent()
+                .map(PathBuf::from)
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "file has no parent"))?;
             if project_dir.is_dir() {
                 Ok((project_dir, Some(resolved)))
             } else {

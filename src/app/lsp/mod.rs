@@ -14,12 +14,21 @@ use lsp_types::{Diagnostic, DiagnosticSeverity};
 use self::client::{LspClient, ServerEvent};
 use self::server_spec::ServerSpec;
 
+#[derive(Clone, Debug)]
+pub(crate) struct CompletionUpdate {
+    pub(crate) path: PathBuf,
+    pub(crate) line: usize,
+    pub(crate) col: usize,
+    pub(crate) items: Vec<lsp_types::CompletionItem>,
+}
+
 pub(crate) struct LspManager {
     root: PathBuf,
     client: Option<LspClient>,
     key: Option<&'static str>,
     diagnostics: HashMap<PathBuf, Vec<Diagnostic>>,
     document_versions: HashMap<PathBuf, i32>,
+    completion: Option<CompletionUpdate>,
 }
 
 impl LspManager {
@@ -30,6 +39,7 @@ impl LspManager {
             key: None,
             diagnostics: HashMap::new(),
             document_versions: HashMap::new(),
+            completion: None,
         }
     }
 
@@ -40,12 +50,14 @@ impl LspManager {
             self.key = None;
             self.diagnostics.clear();
             self.document_versions.clear();
+            self.completion = None;
             return;
         };
 
         if self.key != Some(spec.key) {
             self.diagnostics.clear();
             self.document_versions.clear();
+            self.completion = None;
             self.client = match LspClient::start(&self.root, &spec) {
                 Ok(client) => {
                     *status = format!("LSP connected: {}", spec.name);
@@ -86,7 +98,35 @@ impl LspManager {
         self.key = None;
         self.diagnostics.clear();
         self.document_versions.clear();
+        self.completion = None;
         self.open_file(path, text, status);
+    }
+
+    pub(crate) fn request_completion(
+        &mut self,
+        path: &Path,
+        line: usize,
+        col: usize,
+        status: &mut String,
+    ) -> bool {
+        let normalized = normalize_path(path);
+        let version = self
+            .document_versions
+            .get(&normalized)
+            .copied()
+            .unwrap_or(1);
+        let Some(client) = self.client.as_mut() else {
+            *status = String::from("LSP unavailable for this file.");
+            return false;
+        };
+
+        match client.request_completion(path, line, col, version) {
+            Ok(()) => true,
+            Err(error) => {
+                *status = format!("Completion request failed: {error}");
+                false
+            }
+        }
     }
 
     pub(crate) fn poll(&mut self, _status: &mut String) {
@@ -96,20 +136,48 @@ impl LspManager {
         }
 
         for event in incoming {
-            let ServerEvent::Diagnostics {
-                path,
-                version,
-                diagnostics,
-            } = event;
-            let normalized = normalize_path(&path);
-            if let (Some(incoming_version), Some(current_version)) =
-                (version, self.document_versions.get(&normalized).copied())
-                && incoming_version < current_version
-            {
-                continue;
+            match event {
+                ServerEvent::Diagnostics {
+                    path,
+                    version,
+                    diagnostics,
+                } => {
+                    let normalized = normalize_path(&path);
+                    if let (Some(incoming_version), Some(current_version)) =
+                        (version, self.document_versions.get(&normalized).copied())
+                        && incoming_version < current_version
+                    {
+                        continue;
+                    }
+                    self.diagnostics.insert(normalized, diagnostics);
+                }
+                ServerEvent::Completion {
+                    path,
+                    version,
+                    line,
+                    col,
+                    items,
+                } => {
+                    let normalized = normalize_path(&path);
+                    if let Some(current_version) = self.document_versions.get(&normalized).copied()
+                        && version < current_version
+                    {
+                        continue;
+                    }
+
+                    self.completion = Some(CompletionUpdate {
+                        path: normalized,
+                        line,
+                        col,
+                        items,
+                    });
+                }
             }
-            self.diagnostics.insert(normalized, diagnostics);
         }
+    }
+
+    pub(crate) fn take_completion(&mut self) -> Option<CompletionUpdate> {
+        self.completion.take()
     }
 
     fn first_diagnostic_for_line(

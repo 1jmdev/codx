@@ -1,3 +1,4 @@
+mod completion;
 mod editor;
 mod input;
 mod lsp;

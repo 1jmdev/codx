@@ -29,6 +29,7 @@ impl App {
         } else {
             self.ui.tree_inner = Rect::default();
         }
+        self.draw_completion(frame);
         self.draw_palette(frame);
         self.draw_status(frame, vertical[1]);
         self.place_cursor(frame);
@@ -67,7 +68,7 @@ impl App {
         };
 
         let content = format!(
-            " Codx | {focus} | Ctrl+P Files | Ctrl+Space/F1 Commands | Ctrl+B Sidebar | Esc Tree | Ctrl+S Save | Ctrl+Q Quit | {}",
+            " Codx | {focus} | Ctrl+P Files | F1/Ctrl+Shift+P Commands | Esc Tree | Ctrl+S Save | Ctrl+Q Quit | {}",
             self.status
         );
 

@@ -13,6 +13,8 @@ impl App {
             self.file_picker_cache = collect_project_files(&self.cwd);
         }
 
+        self.completion = None;
+
         self.palette = Some(PaletteState {
             kind,
             query: String::new(),

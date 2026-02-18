@@ -40,6 +40,24 @@ pub(crate) struct EditorSnapshot {
     pub(crate) selection_anchor: Option<CursorPos>,
 }
 
+#[derive(Clone, Debug)]
+pub(crate) struct CompletionItem {
+    pub(crate) label: String,
+    pub(crate) insert_text: String,
+    pub(crate) replace_start_col: usize,
+    pub(crate) replace_end_col: usize,
+    pub(crate) sort_text: String,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct CompletionState {
+    pub(crate) line: usize,
+    pub(crate) anchor_col: usize,
+    pub(crate) selected: usize,
+    pub(crate) scroll: usize,
+    pub(crate) items: Vec<CompletionItem>,
+}
+
 pub struct App {
     pub(crate) cwd: PathBuf,
     pub(crate) focus: Focus,
@@ -64,6 +82,7 @@ pub struct App {
     pub(crate) syntax: SyntaxEngine,
     pub(crate) lsp: LspManager,
     pub(crate) palette: Option<PaletteState>,
+    pub(crate) completion: Option<CompletionState>,
     pub(crate) file_picker_cache: Vec<PathBuf>,
 }
 
@@ -96,6 +115,7 @@ impl App {
             syntax: SyntaxEngine::new(),
             lsp: LspManager::new(cwd),
             palette: None,
+            completion: None,
             file_picker_cache: Vec::new(),
         };
 
@@ -112,6 +132,7 @@ impl App {
     {
         loop {
             self.lsp.poll(&mut self.status);
+            self.refresh_completion_from_lsp();
             terminal.draw(|frame| self.draw(frame))?;
 
             if self.should_quit {

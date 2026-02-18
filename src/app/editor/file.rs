@@ -31,6 +31,7 @@ impl App {
         self.dirty = false;
         self.status = status;
         self.focus = Focus::Editor;
+        self.completion = None;
         self.lsp
             .open_file(&path, self.lines.join("\n"), &mut self.status);
         Ok(())
