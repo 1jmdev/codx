@@ -18,6 +18,7 @@ impl App {
         let Some(view) = self.palette_view() else {
             self.ui.palette_inner = Rect::default();
             self.ui.palette_results = Rect::default();
+            self.ui.palette_preview = Rect::default();
             return;
         };
 
@@ -28,13 +29,26 @@ impl App {
         let total = view.total_matches;
         let title = if total > 0 {
             format!(
-                " {} ({}/{}) ",
+                " {} ({}/{}){} ",
                 view.title,
                 view.scroll + view.selected + 1,
-                total
+                total,
+                if view.preview_active {
+                    " [Preview]"
+                } else {
+                    ""
+                }
             )
         } else {
-            format!(" {} ", view.title)
+            format!(
+                " {}{} ",
+                view.title,
+                if view.preview_active {
+                    " [Preview]"
+                } else {
+                    ""
+                }
+            )
         };
 
         let outer = Block::default()
@@ -55,6 +69,7 @@ impl App {
             (inner, None)
         };
         self.ui.palette_results = results_area;
+        self.ui.palette_preview = preview_area.unwrap_or_default();
 
         {
             let mut lines: Vec<Line> = Vec::new();
@@ -83,10 +98,16 @@ impl App {
             for (idx, row) in view.rows.iter().enumerate() {
                 let is_selected = idx == view.selected;
                 let style = if is_selected {
-                    Style::default()
-                        .fg(Color::Black)
-                        .bg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD)
+                    if view.preview_active {
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Rgb(120, 170, 190))
+                    } else {
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD)
+                    }
                 } else {
                     Style::default().fg(Color::Rgb(180, 180, 180))
                 };
@@ -113,7 +134,14 @@ impl App {
                 Rect::new(sep_x, right.y, 1, right.height),
             );
 
-            self.draw_palette_preview(frame, right, &preview.path, preview.focus_line);
+            self.draw_palette_preview(
+                frame,
+                right,
+                &preview.path,
+                preview.focus_line,
+                view.preview_scroll,
+                view.preview_active,
+            );
         }
     }
 
@@ -123,6 +151,8 @@ impl App {
         area: Rect,
         path: &PathBuf,
         focus_line: usize,
+        preview_scroll: usize,
+        preview_active: bool,
     ) {
         let visible_rows = area.height as usize;
         if visible_rows == 0 {
@@ -149,10 +179,13 @@ impl App {
             return;
         }
 
+        let max_scroll = total_lines.saturating_sub(visible_rows);
         let half = visible_rows / 2;
-        let scroll_start = focus_line
-            .saturating_sub(half)
-            .min(total_lines.saturating_sub(visible_rows));
+        let scroll_start = if preview_active {
+            preview_scroll.min(max_scroll)
+        } else {
+            focus_line.saturating_sub(half).min(max_scroll)
+        };
         let scroll_end = (scroll_start + visible_rows).min(total_lines);
 
         let highlighted = self.syntax.highlight_visible(

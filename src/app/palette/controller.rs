@@ -23,6 +23,8 @@ impl App {
             query: String::new(),
             replace_text: String::new(),
             selected: 0,
+            preview_active: false,
+            preview_scroll: 0,
         });
     }
 
@@ -68,6 +70,8 @@ impl App {
                 PaletteAction::Command(_) => None,
             });
 
+        let preview_active = state.preview_active && preview.is_some();
+
         Some(PaletteView {
             title,
             query: state.query.clone(),
@@ -78,10 +82,21 @@ impl App {
             total_matches: all_matches.len(),
             show_replace,
             preview,
+            preview_active,
+            preview_scroll: state.preview_scroll,
         })
     }
 
     pub(crate) fn move_palette_selection(&mut self, delta_rows: isize) {
+        let preview_active = self
+            .palette
+            .as_ref()
+            .is_some_and(|state| state.preview_active);
+        if preview_active {
+            self.scroll_palette_preview(delta_rows);
+            return;
+        }
+
         let max = self
             .palette
             .as_ref()
@@ -90,6 +105,30 @@ impl App {
         if let Some(state) = self.palette.as_mut() {
             let next = state.selected as isize + delta_rows;
             state.selected = next.clamp(0, max as isize) as usize;
+            state.preview_scroll = 0;
+        }
+    }
+
+    pub(crate) fn scroll_palette_preview(&mut self, delta_lines: isize) {
+        let has_preview = self.palette_has_preview_target();
+        if !has_preview {
+            return;
+        }
+
+        let default_scroll = self.palette_default_preview_scroll();
+
+        let Some(state) = self.palette.as_mut() else {
+            return;
+        };
+
+        if !state.preview_active {
+            state.preview_scroll = default_scroll;
+        }
+        state.preview_active = true;
+        if delta_lines < 0 {
+            state.preview_scroll = state.preview_scroll.saturating_sub((-delta_lines) as usize);
+        } else {
+            state.preview_scroll = state.preview_scroll.saturating_add(delta_lines as usize);
         }
     }
 
@@ -102,17 +141,40 @@ impl App {
             KeyCode::Esc => self.palette = None,
             KeyCode::Up => {
                 if let Some(state) = self.palette.as_mut() {
-                    state.selected = state.selected.saturating_sub(1);
+                    if state.preview_active {
+                        state.preview_scroll = state.preview_scroll.saturating_sub(1);
+                    } else {
+                        state.selected = state.selected.saturating_sub(1);
+                        state.preview_scroll = 0;
+                    }
                 }
             }
             KeyCode::Down => {
-                let max = self
-                    .palette
-                    .as_ref()
-                    .map(|state| self.palette_matches(state).len().saturating_sub(1))
-                    .unwrap_or(0);
+                let max = self.palette_max_selection_index();
                 if let Some(state) = self.palette.as_mut() {
-                    state.selected = (state.selected + 1).min(max);
+                    if state.preview_active {
+                        state.preview_scroll = state.preview_scroll.saturating_add(1);
+                    } else {
+                        state.selected = (state.selected + 1).min(max);
+                        state.preview_scroll = 0;
+                    }
+                }
+            }
+            KeyCode::Left => {
+                if let Some(state) = self.palette.as_mut() {
+                    state.preview_active = false;
+                }
+            }
+            KeyCode::Right => {
+                let has_preview = self.palette_has_preview_target();
+                if has_preview {
+                    let default_scroll = self.palette_default_preview_scroll();
+                    if let Some(state) = self.palette.as_mut() {
+                        if !state.preview_active {
+                            state.preview_scroll = default_scroll;
+                        }
+                        state.preview_active = true;
+                    }
                 }
             }
             KeyCode::Tab => {
@@ -123,6 +185,8 @@ impl App {
                 if is_grep_replace {
                     if let Some(state) = self.palette.as_mut() {
                         std::mem::swap(&mut state.query, &mut state.replace_text);
+                        state.preview_active = false;
+                        state.preview_scroll = 0;
                     }
                 }
             }
@@ -130,6 +194,8 @@ impl App {
                 if let Some(state) = self.palette.as_mut() {
                     state.query.pop();
                     state.selected = 0;
+                    state.preview_active = false;
+                    state.preview_scroll = 0;
                 }
             }
             KeyCode::Enter => self.activate_palette_selection(),
@@ -139,6 +205,8 @@ impl App {
                 if let Some(state) = self.palette.as_mut() {
                     state.query.push(ch);
                     state.selected = 0;
+                    state.preview_active = false;
+                    state.preview_scroll = 0;
                 }
             }
             _ => {}
@@ -178,6 +246,47 @@ impl App {
             }
             PaletteAction::Command(PaletteCommand::ReloadLsp) => self.reload_lsp_server(),
         }
+    }
+
+    fn palette_max_selection_index(&self) -> usize {
+        self.palette
+            .as_ref()
+            .map(|state| self.palette_matches(state).len().saturating_sub(1))
+            .unwrap_or(0)
+    }
+
+    fn palette_has_preview_target(&self) -> bool {
+        let Some(state) = self.palette.as_ref() else {
+            return false;
+        };
+        let matches = self.palette_matches(state);
+        let Some(selected) = matches.get(state.selected) else {
+            return false;
+        };
+        matches!(
+            selected.action,
+            PaletteAction::OpenFile(_) | PaletteAction::OpenFileAt(_, _, _)
+        )
+    }
+
+    fn palette_default_preview_scroll(&self) -> usize {
+        let Some(state) = self.palette.as_ref() else {
+            return 0;
+        };
+
+        let matches = self.palette_matches(state);
+        let Some(selected) = matches.get(state.selected) else {
+            return 0;
+        };
+
+        let focus_line = match selected.action {
+            PaletteAction::OpenFile(_) => 0,
+            PaletteAction::OpenFileAt(_, line, _) => line,
+            PaletteAction::Command(_) => return 0,
+        };
+
+        let visible_rows = self.ui.palette_preview.height.max(1) as usize;
+        focus_line.saturating_sub(visible_rows / 2)
     }
 }
 

@@ -32,6 +32,7 @@ pub(crate) struct UiGeometry {
     pub(crate) tree_inner: Rect,
     pub(crate) palette_inner: Rect,
     pub(crate) palette_results: Rect,
+    pub(crate) palette_preview: Rect,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

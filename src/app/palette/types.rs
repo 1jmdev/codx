@@ -14,6 +14,8 @@ pub(crate) struct PaletteState {
     pub(crate) query: String,
     pub(crate) replace_text: String,
     pub(crate) selected: usize,
+    pub(crate) preview_active: bool,
+    pub(crate) preview_scroll: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -33,6 +35,8 @@ pub(crate) struct PaletteView {
     pub(crate) total_matches: usize,
     pub(crate) show_replace: bool,
     pub(crate) preview: Option<PreviewTarget>,
+    pub(crate) preview_active: bool,
+    pub(crate) preview_scroll: usize,
 }
 
 #[derive(Clone, Copy, Debug)]

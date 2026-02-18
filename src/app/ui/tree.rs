@@ -71,11 +71,7 @@ impl App {
 
 fn tree_item_icon(name: &str, is_dir: bool, is_expanded: bool) -> &'static str {
     if is_dir {
-        if is_expanded {
-            " "
-        } else {
-            " "
-        }
+        if is_expanded { " " } else { " " }
     } else {
         file_icon(name)
     }

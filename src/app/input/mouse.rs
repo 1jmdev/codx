@@ -55,9 +55,16 @@ impl App {
     }
 
     fn handle_mouse_scroll(&mut self, delta_lines: isize, x: u16, y: u16) {
-        if self.palette.is_some() && rect_contains(self.ui.palette_results, x, y) {
-            self.move_palette_selection(delta_lines);
-            return;
+        if self.palette.is_some() {
+            if rect_contains(self.ui.palette_results, x, y) {
+                self.move_palette_selection(delta_lines);
+                return;
+            }
+
+            if rect_contains(self.ui.palette_preview, x, y) {
+                self.scroll_palette_preview(delta_lines);
+                return;
+            }
         }
 
         if rect_contains(self.ui.tree_inner, x, y) {
