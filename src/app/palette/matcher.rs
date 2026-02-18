@@ -8,21 +8,17 @@ use super::{
     types::{PaletteAction, PaletteCommand, PaletteKind, PaletteMatch, PaletteState},
 };
 
-const MAX_FUZZY_RESULTS: usize = 8;
-
 impl App {
     pub(super) fn palette_matches(&self, state: &PaletteState) -> Vec<PaletteMatch> {
         match state.kind {
             PaletteKind::Files => {
                 let mut matches = self.file_matches(&state.query);
                 matches.sort_by_key(|item| (Reverse(item.score), item.label.clone()));
-                matches.truncate(MAX_FUZZY_RESULTS);
                 matches
             }
             PaletteKind::Commands => {
                 let mut matches = self.command_matches(&state.query);
                 matches.sort_by_key(|item| (Reverse(item.score), item.label.clone()));
-                matches.truncate(MAX_FUZZY_RESULTS);
                 matches
             }
             PaletteKind::GrepSearch | PaletteKind::GrepReplace => self.grep_matches(&state.query),
