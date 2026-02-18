@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Paragraph},
 };
 
-use crate::app::{search::SearchField, App};
+use crate::app::{App, search::SearchField};
 
 const PANEL_INNER_W: u16 = 40;
 const PANEL_H_SEARCH: u16 = 3;

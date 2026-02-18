@@ -1,7 +1,7 @@
 use std::{collections::HashSet, io, path::PathBuf, time::Duration};
 
 use crossterm::event::{self, Event};
-use ratatui::{layout::Rect, Terminal};
+use ratatui::{Terminal, layout::Rect};
 
 use crate::app::{
     lsp::LspManager, palette::PaletteState, search::SearchReplaceState, syntax::SyntaxEngine,

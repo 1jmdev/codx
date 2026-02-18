@@ -1,6 +1,6 @@
-use crate::app::{palette::PaletteKind, App, Focus};
+use crate::app::{App, Focus, palette::PaletteKind};
 
-use super::keymap::{resolve_global_command, GlobalCommand};
+use super::keymap::{GlobalCommand, resolve_global_command};
 use crossterm::event::KeyEvent;
 
 impl App {
