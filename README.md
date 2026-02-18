@@ -10,6 +10,7 @@ Codx is a fast terminal code editor written in Rust. It focuses on keyboard-firs
 - Basic code editing with undo/redo, duplicate/delete line, and indentation controls
 - Syntax highlighting support
 - LSP integration with reload command from the command palette
+- Nerd Font file and folder icons
 
 ## Installation
 
@@ -53,6 +54,8 @@ codx path/to/folder
 ```
 
 In directory mode, you can browse/open files from the sidebar and file palette.
+
+For the best icons, use a Nerd Font (for example, JetBrainsMono Nerd Font or FiraCode Nerd Font) in your terminal.
 
 ## Default Keybindings
 
