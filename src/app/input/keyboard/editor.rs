@@ -57,6 +57,19 @@ impl App {
             }
             _ => {}
         }
+
+        if matches!(
+            key.code,
+            KeyCode::Up
+                | KeyCode::Down
+                | KeyCode::Left
+                | KeyCode::Right
+                | KeyCode::Home
+                | KeyCode::End
+        ) {
+            let view_height = self.ui.editor_inner.height as usize;
+            self.ensure_cursor_visible(view_height);
+        }
     }
 
     fn move_cursor_up(&mut self, selecting: bool) {

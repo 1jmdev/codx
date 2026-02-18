@@ -26,4 +26,32 @@ impl App {
         let max_scroll = self.lines.len().saturating_sub(view_height);
         self.editor_scroll = self.editor_scroll.min(max_scroll);
     }
+
+    pub(crate) fn ensure_cursor_in_view(&mut self, view_height: usize) {
+        if view_height == 0 {
+            return;
+        }
+
+        if self.cursor_line < self.editor_scroll {
+            self.editor_scroll = self.cursor_line;
+        }
+
+        let bottom = self.editor_scroll + view_height - 1;
+        if self.cursor_line > bottom {
+            self.editor_scroll = self.cursor_line + 1 - view_height;
+        }
+
+        let max_scroll = self.lines.len().saturating_sub(view_height);
+        self.editor_scroll = self.editor_scroll.min(max_scroll);
+    }
+
+    pub(crate) fn scroll_editor_lines(&mut self, delta_lines: isize, view_height: usize) {
+        if view_height == 0 {
+            return;
+        }
+
+        let max_scroll = self.lines.len().saturating_sub(view_height) as isize;
+        let next = self.editor_scroll as isize + delta_lines;
+        self.editor_scroll = next.clamp(0, max_scroll.max(0)) as usize;
+    }
 }

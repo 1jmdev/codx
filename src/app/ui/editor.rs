@@ -37,7 +37,7 @@ impl App {
         self.ui.editor_inner = inner;
         frame.render_widget(block, area);
 
-        self.ensure_cursor_visible(inner.height as usize);
+        self.ensure_cursor_in_view(inner.height as usize);
         let start = self.editor_scroll;
         let end = (start + inner.height as usize).min(self.lines.len());
         let highlighted =

@@ -18,6 +18,7 @@ pub(super) enum GlobalCommand {
     Redo,
     DuplicateLine,
     DeleteLine,
+    CopySelection,
     ActivateTreeItem,
 }
 
@@ -104,6 +105,11 @@ const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     Binding {
         command: GlobalCommand::DeleteLine,
         keys: &["ctrl+shift+k"],
+        scope: Scope::Editor,
+    },
+    Binding {
+        command: GlobalCommand::CopySelection,
+        keys: &["ctrl+c"],
         scope: Scope::Editor,
     },
     Binding {

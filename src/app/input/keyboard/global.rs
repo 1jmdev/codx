@@ -71,6 +71,10 @@ impl App {
                 self.delete_line_or_selection();
                 true
             }
+            GlobalCommand::CopySelection => {
+                self.copy_selection_to_clipboard();
+                true
+            }
             GlobalCommand::ActivateTreeItem => {
                 self.activate_tree_item();
                 true

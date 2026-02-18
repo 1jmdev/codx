@@ -47,6 +47,18 @@ impl App {
         }
     }
 
+    pub(crate) fn scroll_tree_lines(&mut self, delta_lines: isize) {
+        if self.tree_items.is_empty() {
+            self.tree_scroll = 0;
+            return;
+        }
+
+        let view_height = self.ui.tree_inner.height.max(1) as usize;
+        let max_scroll = self.tree_items.len().saturating_sub(view_height) as isize;
+        let next = self.tree_scroll as isize + delta_lines;
+        self.tree_scroll = next.clamp(0, max_scroll.max(0)) as usize;
+    }
+
     fn walk_dir(&self, dir: &Path, depth: usize, out: &mut Vec<TreeItem>) {
         let entries = match fs::read_dir(dir) {
             Ok(read_dir) => {

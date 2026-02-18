@@ -1,4 +1,9 @@
-use std::{collections::HashSet, io, path::PathBuf, time::Duration};
+use std::{
+    collections::HashSet,
+    io,
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 use crossterm::event::{self, Event};
 use ratatui::{Terminal, layout::Rect};
@@ -25,6 +30,8 @@ pub(crate) struct TreeItem {
 pub(crate) struct UiGeometry {
     pub(crate) editor_inner: Rect,
     pub(crate) tree_inner: Rect,
+    pub(crate) palette_inner: Rect,
+    pub(crate) palette_results: Rect,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -60,6 +67,12 @@ pub(crate) struct CompletionState {
     pub(crate) items: Vec<CompletionItem>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum MouseSelectMode {
+    Char,
+    Word,
+}
+
 pub struct App {
     pub(crate) cwd: PathBuf,
     pub(crate) focus: Focus,
@@ -87,6 +100,10 @@ pub struct App {
     pub(crate) completion: Option<CompletionState>,
     pub(crate) file_picker_cache: Vec<PathBuf>,
     pub(crate) search_replace: Option<SearchReplaceState>,
+    pub(crate) mouse_selecting: bool,
+    pub(crate) mouse_select_mode: MouseSelectMode,
+    pub(crate) word_select_origin: Option<(CursorPos, CursorPos)>,
+    pub(crate) last_left_click: Option<(Instant, u16, u16)>,
 }
 
 impl App {
@@ -121,6 +138,10 @@ impl App {
             completion: None,
             file_picker_cache: Vec::new(),
             search_replace: None,
+            mouse_selecting: false,
+            mouse_select_mode: MouseSelectMode::Char,
+            word_select_origin: None,
+            last_left_click: None,
         };
 
         app.rebuild_tree();

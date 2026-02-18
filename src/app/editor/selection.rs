@@ -57,6 +57,39 @@ impl App {
         Some((start.line, end.line))
     }
 
+    pub(crate) fn selection_text(&self) -> Option<String> {
+        let (start, end) = self.selection_bounds()?;
+        let mut out = String::new();
+        for line_idx in start.line..=end.line {
+            let line = &self.lines[line_idx];
+            let start_col = if line_idx == start.line { start.col } else { 0 };
+            let end_col = if line_idx == end.line {
+                end.col
+            } else {
+                line_len_chars(line)
+            };
+            let start_byte = byte_index_for_char(line, start_col);
+            let end_byte = byte_index_for_char(line, end_col);
+            out.push_str(&line[start_byte..end_byte]);
+            if line_idx < end.line {
+                out.push('\n');
+            }
+        }
+        Some(out)
+    }
+
+    pub(crate) fn copy_selection_to_clipboard(&mut self) {
+        let Some(text) = self.selection_text() else {
+            self.status = String::from("Nothing selected to copy.");
+            return;
+        };
+
+        match arboard::Clipboard::new().and_then(|mut clipboard| clipboard.set_text(text)) {
+            Ok(()) => self.status = String::from("Selection copied."),
+            Err(error) => self.status = format!("Copy failed: {error}"),
+        }
+    }
+
     pub(crate) fn cursor_pos(&self) -> CursorPos {
         CursorPos {
             line: self.cursor_line,

@@ -14,8 +14,10 @@ const HEIGHT_PERCENT: u16 = 80;
 const WIDTH_PERCENT_NARROW: u16 = 40;
 
 impl App {
-    pub(super) fn draw_palette(&self, frame: &mut ratatui::Frame) {
+    pub(super) fn draw_palette(&mut self, frame: &mut ratatui::Frame) {
         let Some(view) = self.palette_view() else {
+            self.ui.palette_inner = Rect::default();
+            self.ui.palette_results = Rect::default();
             return;
         };
 
@@ -40,6 +42,7 @@ impl App {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan));
         let inner = outer.inner(area);
+        self.ui.palette_inner = inner;
         frame.render_widget(outer, area);
 
         let (results_area, preview_area) = if has_preview {
@@ -51,6 +54,7 @@ impl App {
         } else {
             (inner, None)
         };
+        self.ui.palette_results = results_area;
 
         {
             let mut lines: Vec<Line> = Vec::new();
@@ -76,13 +80,6 @@ impl App {
                 Style::default().fg(Color::Rgb(60, 60, 60)),
             )));
 
-            if view.scroll > 0 {
-                lines.push(Line::from(Span::styled(
-                    format!("  \u{25b2} {} more above", view.scroll),
-                    Style::default().fg(Color::Rgb(100, 100, 100)),
-                )));
-            }
-
             for (idx, row) in view.rows.iter().enumerate() {
                 let is_selected = idx == view.selected;
                 let style = if is_selected {
@@ -96,14 +93,6 @@ impl App {
                 let max_chars = results_area.width.saturating_sub(3) as usize;
                 let label: String = row.chars().take(max_chars).collect();
                 lines.push(Line::from(Span::styled(format!("  {label}"), style)));
-            }
-
-            let remaining = total.saturating_sub(view.scroll + view.rows.len());
-            if remaining > 0 {
-                lines.push(Line::from(Span::styled(
-                    format!("  \u{25bc} {} more below", remaining),
-                    Style::default().fg(Color::Rgb(100, 100, 100)),
-                )));
             }
 
             frame.render_widget(Paragraph::new(Text::from(lines)), results_area);

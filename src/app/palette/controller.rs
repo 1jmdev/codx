@@ -7,7 +7,8 @@ use super::{
     types::{PaletteAction, PaletteCommand, PaletteKind, PaletteState, PaletteView, PreviewTarget},
 };
 
-const VISIBLE_ROWS: usize = 16;
+const MIN_VISIBLE_ROWS: usize = 1;
+const FALLBACK_VISIBLE_ROWS: usize = 16;
 
 impl App {
     pub(crate) fn open_palette(&mut self, kind: PaletteKind) {
@@ -28,9 +29,10 @@ impl App {
     pub(crate) fn palette_view(&self) -> Option<PaletteView> {
         let state = self.palette.as_ref()?;
         let all_matches = self.palette_matches(state);
+        let visible_rows = self.palette_visible_rows(state);
 
-        let scroll = if state.selected >= VISIBLE_ROWS {
-            state.selected - VISIBLE_ROWS + 1
+        let scroll = if state.selected >= visible_rows {
+            state.selected - visible_rows + 1
         } else {
             0
         };
@@ -38,7 +40,7 @@ impl App {
         let rows = all_matches
             .iter()
             .skip(scroll)
-            .take(VISIBLE_ROWS)
+            .take(visible_rows)
             .map(|item| item.label.clone())
             .collect();
 
@@ -77,6 +79,18 @@ impl App {
             show_replace,
             preview,
         })
+    }
+
+    pub(crate) fn move_palette_selection(&mut self, delta_rows: isize) {
+        let max = self
+            .palette
+            .as_ref()
+            .map(|state| self.palette_matches(state).len().saturating_sub(1))
+            .unwrap_or(0);
+        if let Some(state) = self.palette.as_mut() {
+            let next = state.selected as isize + delta_rows;
+            state.selected = next.clamp(0, max as isize) as usize;
+        }
     }
 
     pub(crate) fn handle_palette_key(&mut self, key: KeyEvent) -> bool {
@@ -164,5 +178,22 @@ impl App {
             }
             PaletteAction::Command(PaletteCommand::ReloadLsp) => self.reload_lsp_server(),
         }
+    }
+}
+
+impl App {
+    fn palette_visible_rows(&self, state: &PaletteState) -> usize {
+        let panel_rows = self.ui.palette_results.height as usize;
+        if panel_rows == 0 {
+            return FALLBACK_VISIBLE_ROWS;
+        }
+
+        let fixed_rows = if state.kind == PaletteKind::GrepReplace {
+            3
+        } else {
+            2
+        };
+
+        panel_rows.saturating_sub(fixed_rows).max(MIN_VISIBLE_ROWS)
     }
 }
