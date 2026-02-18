@@ -17,7 +17,7 @@ impl App {
         let content = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(if self.sidebar_open {
-                [Constraint::Percentage(74), Constraint::Percentage(26)]
+                [Constraint::Percentage(78), Constraint::Percentage(22)]
             } else {
                 [Constraint::Percentage(100), Constraint::Length(0)]
             })
