@@ -4,7 +4,6 @@ use super::types::SearchField;
 use crate::app::App;
 
 impl App {
-    /// Returns `true` when the key event was consumed by the search/replace panel.
     pub(crate) fn handle_search_replace_key(&mut self, key: KeyEvent) -> bool {
         if self.search_replace.is_none() {
             return false;
@@ -13,28 +12,32 @@ impl App {
         match key.code {
             KeyCode::Esc => self.close_search_replace(),
 
-            // Tab / Shift+Tab — switch between Search and Replace fields
-            KeyCode::Tab | KeyCode::BackTab => self.toggle_search_field(),
+            KeyCode::Tab | KeyCode::BackTab => {
+                let show_replace = self
+                    .search_replace
+                    .as_ref()
+                    .is_some_and(|sr| sr.show_replace);
+                if !show_replace {
+                    return false;
+                }
+                self.toggle_search_field();
+            }
 
-            // Enter / F3 — navigate matches (Shift reverses direction)
             KeyCode::Enter if key.modifiers == KeyModifiers::SHIFT => self.goto_prev_match(),
             KeyCode::Enter => self.goto_next_match(),
             KeyCode::F(3) if key.modifiers == KeyModifiers::SHIFT => self.goto_prev_match(),
             KeyCode::F(3) => self.goto_next_match(),
 
-            // Alt+R — replace current match
             KeyCode::Char('r') if key.modifiers == KeyModifiers::ALT => self.replace_current(),
-
-            // Alt+A — replace all matches
             KeyCode::Char('a') if key.modifiers == KeyModifiers::ALT => self.replace_all(),
 
-            // Regular typing — route to focused field
             KeyCode::Char(ch)
                 if key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT =>
             {
                 self.push_search_char(ch);
             }
-            KeyCode::Backspace => self.pop_search_char(),
+
+            KeyCode::Backspace | KeyCode::Delete => self.pop_search_char(),
 
             _ => return false,
         }

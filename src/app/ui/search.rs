@@ -7,12 +7,9 @@ use ratatui::{
 
 use crate::app::{search::SearchField, App};
 
-/// Width of the search/replace panel (without borders).
-const PANEL_INNER_W: u16 = 36;
-/// Height when only the search row is shown.
-const PANEL_H_SEARCH: u16 = 3; // border-top + input row + border-bottom
-/// Height when the replace row is also shown.
-const PANEL_H_REPLACE: u16 = 5; // + label + input row
+const PANEL_INNER_W: u16 = 40;
+const PANEL_H_SEARCH: u16 = 3;
+const PANEL_H_REPLACE: u16 = 6;
 
 impl App {
     pub(super) fn draw_search_replace(&self, frame: &mut ratatui::Frame) {
@@ -29,7 +26,6 @@ impl App {
         let area = search_panel_area(frame.area(), self.ui.editor_inner, panel_h);
         frame.render_widget(Clear, area);
 
-        // Outer border
         let border_style = Style::default().fg(Color::Cyan);
         let block = Block::default()
             .borders(Borders::ALL)
@@ -43,7 +39,6 @@ impl App {
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
-        // ── Search row ────────────────────────────────────────────────────────
         let search_focused = sr.focused_field == SearchField::Search;
         let match_info = if sr.matches.is_empty() && !sr.query.is_empty() {
             " No results".to_string()
@@ -53,24 +48,16 @@ impl App {
             String::new()
         };
 
-        let search_label_style = if search_focused {
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::DarkGray)
-        };
-        let search_prefix = Span::styled("  ", search_label_style);
         let search_text = Span::styled(
             format!(
-                "{:<width$}",
+                "  {:<width$}",
                 sr.query,
                 width = inner.width.saturating_sub(6) as usize
             ),
             if search_focused {
                 Style::default().fg(Color::White)
             } else {
-                Style::default().fg(Color::Gray)
+                Style::default().fg(Color::Rgb(150, 150, 150))
             },
         );
         let match_span = Span::styled(
@@ -78,80 +65,76 @@ impl App {
             Style::default().fg(if sr.matches.is_empty() && !sr.query.is_empty() {
                 Color::Red
             } else {
-                Color::DarkGray
+                Color::Rgb(120, 120, 120)
             }),
         );
 
         let search_row = Rect::new(inner.x, inner.y, inner.width, 1);
         frame.render_widget(
-            Paragraph::new(Line::from(vec![search_prefix, search_text, match_span])),
+            Paragraph::new(Line::from(vec![search_text, match_span])),
             search_row,
         );
 
-        // ── Replace row (only when show_replace) ─────────────────────────────
         if sr.show_replace {
             let replace_focused = sr.focused_field == SearchField::Replace;
-            let replace_label_style = if replace_focused {
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(Color::DarkGray)
-            };
 
-            let replace_prefix = Span::styled("  ", replace_label_style);
+            let divider_row = Rect::new(inner.x, inner.y + 1, inner.width, 1);
+            frame.render_widget(
+                Paragraph::new(Line::from(Span::styled(
+                    "─".repeat(inner.width as usize),
+                    Style::default().fg(Color::Rgb(80, 80, 80)),
+                ))),
+                divider_row,
+            );
+
             let replace_text = Span::styled(
                 format!(
-                    "{:<width$}",
+                    "  {:<width$}",
                     sr.replacement,
                     width = inner.width.saturating_sub(4) as usize
                 ),
                 if replace_focused {
                     Style::default().fg(Color::White)
                 } else {
-                    Style::default().fg(Color::Gray)
+                    Style::default().fg(Color::Rgb(150, 150, 150))
                 },
             );
 
-            // Divider between the two rows
-            let divider_row = Rect::new(inner.x, inner.y + 1, inner.width, 1);
+            let replace_row = Rect::new(inner.x, inner.y + 2, inner.width, 1);
+            frame.render_widget(Paragraph::new(Line::from(replace_text)), replace_row);
+
+            let hint_divider_row = Rect::new(inner.x, inner.y + 3, inner.width, 1);
             frame.render_widget(
                 Paragraph::new(Line::from(Span::styled(
                     "─".repeat(inner.width as usize),
-                    Style::default().fg(Color::Rgb(60, 60, 60)),
+                    Style::default().fg(Color::Rgb(80, 80, 80)),
                 ))),
-                divider_row,
+                hint_divider_row,
             );
 
-            let replace_row = Rect::new(inner.x, inner.y + 2, inner.width, 1);
+            let hint_row = Rect::new(inner.x, inner.y + 4, inner.width, 1);
             frame.render_widget(
-                Paragraph::new(Line::from(vec![replace_prefix, replace_text])),
-                replace_row,
-            );
-
-            // Hint line at the bottom
-            let hint_row = Rect::new(inner.x, inner.y + 3, inner.width, 1);
-            frame.render_widget(
-                Paragraph::new(Line::from(Span::styled(
-                    " Alt+R replace  Alt+A all  Tab switch",
-                    Style::default().fg(Color::Rgb(90, 90, 90)),
-                ))),
-                hint_row,
-            );
-        } else {
-            // Search-only hint
-            let hint_row = Rect::new(inner.x, inner.y + 1, inner.width, 1);
-            frame.render_widget(
-                Paragraph::new(Line::from(Span::styled(
-                    " Enter next  Shift+Enter prev  Ctrl+H replace",
-                    Style::default().fg(Color::Rgb(90, 90, 90)),
-                ))),
+                Paragraph::new(Line::from(vec![
+                    Span::styled(
+                        " Alt+R ",
+                        Style::default()
+                            .fg(Color::Rgb(180, 180, 60))
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                    Span::styled("replace  ", Style::default().fg(Color::Rgb(160, 160, 160))),
+                    Span::styled(
+                        "Alt+A ",
+                        Style::default()
+                            .fg(Color::Rgb(180, 180, 60))
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                    Span::styled("all", Style::default().fg(Color::Rgb(160, 160, 160))),
+                ])),
                 hint_row,
             );
         }
     }
 
-    /// Returns the cursor position to place inside the active search/replace field.
     pub(super) fn search_replace_cursor_position(&self, root: Rect) -> Option<(u16, u16)> {
         let sr = self.search_replace.as_ref()?;
         let panel_h = if sr.show_replace {
@@ -167,22 +150,19 @@ impl App {
             SearchField::Replace => (inner.y + 2, &sr.replacement),
         };
 
-        // 2 chars for the "  " prefix
         let cursor_x = (inner.x + 2 + text.chars().count() as u16).min(inner.x + inner.width - 1);
         Some((cursor_x, field_y))
     }
 }
 
-/// Position the panel in the top-right corner of the editor inner area.
 fn search_panel_area(root: Rect, editor_inner: Rect, panel_h: u16) -> Rect {
-    // Use editor_inner if it has been computed, otherwise fall back to root.
     let base = if editor_inner.width > 0 {
         editor_inner
     } else {
         root
     };
 
-    let w = (PANEL_INNER_W + 2).min(base.width); // +2 for borders
+    let w = (PANEL_INNER_W + 2).min(base.width);
     let x = base.x + base.width.saturating_sub(w);
     let y = base.y;
     Rect::new(x, y, w, panel_h.min(base.height))

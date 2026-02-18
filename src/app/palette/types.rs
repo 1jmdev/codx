@@ -4,12 +4,15 @@ use std::path::PathBuf;
 pub(crate) enum PaletteKind {
     Files,
     Commands,
+    GrepSearch,
+    GrepReplace,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct PaletteState {
     pub(crate) kind: PaletteKind,
     pub(crate) query: String,
+    pub(crate) replace_text: String,
     pub(crate) selected: usize,
 }
 
@@ -17,8 +20,12 @@ pub(crate) struct PaletteState {
 pub(crate) struct PaletteView {
     pub(crate) title: &'static str,
     pub(crate) query: String,
+    pub(crate) replace_text: String,
     pub(crate) rows: Vec<String>,
     pub(crate) selected: usize,
+    pub(crate) scroll: usize,
+    pub(crate) total_matches: usize,
+    pub(crate) show_replace: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -27,8 +34,17 @@ pub(super) enum PaletteCommand {
 }
 
 #[derive(Clone, Debug)]
+pub(super) struct GrepMatch {
+    pub(super) path: PathBuf,
+    pub(super) line_number: usize,
+    pub(super) line_text: String,
+    pub(super) col_start: usize,
+}
+
+#[derive(Clone, Debug)]
 pub(super) enum PaletteAction {
     OpenFile(PathBuf),
+    OpenFileAt(PathBuf, usize, usize),
     Command(PaletteCommand),
 }
 

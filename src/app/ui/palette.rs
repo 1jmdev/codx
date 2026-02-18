@@ -19,8 +19,20 @@ impl App {
         let area = palette_area(frame.area());
         frame.render_widget(Clear, area);
 
+        let total = view.total_matches;
+        let title = if total > view.rows.len() || view.scroll > 0 {
+            format!(
+                " {} ({}/{}) ",
+                view.title,
+                view.scroll + view.selected + 1,
+                total
+            )
+        } else {
+            format!(" {} ", view.title)
+        };
+
         let block = Block::default()
-            .title(format!(" {} ", view.title))
+            .title(title)
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan));
         let inner = block.inner(area);
@@ -30,6 +42,28 @@ impl App {
             format!("> {}", view.query),
             Style::default().fg(Color::White),
         ))];
+
+        if view.show_replace {
+            lines.push(Line::from(Span::styled(
+                "─".repeat(inner.width as usize),
+                Style::default().fg(Color::Rgb(80, 80, 80)),
+            )));
+            lines.push(Line::from(Span::styled(
+                format!("> {}", view.replace_text),
+                Style::default().fg(Color::Rgb(200, 200, 150)),
+            )));
+            lines.push(Line::from(Span::styled(
+                "─".repeat(inner.width as usize),
+                Style::default().fg(Color::Rgb(80, 80, 80)),
+            )));
+        }
+
+        if view.scroll > 0 {
+            lines.push(Line::from(Span::styled(
+                format!("  \u{25b2} {} more above", view.scroll),
+                Style::default().fg(Color::Rgb(100, 100, 100)),
+            )));
+        }
 
         for (idx, row) in view.rows.iter().enumerate() {
             let style = if idx == view.selected {
@@ -41,6 +75,14 @@ impl App {
                 Style::default().fg(Color::Gray)
             };
             lines.push(Line::from(Span::styled(format!("  {row}"), style)));
+        }
+
+        let remaining = total.saturating_sub(view.scroll + view.rows.len());
+        if remaining > 0 {
+            lines.push(Line::from(Span::styled(
+                format!("  \u{25bc} {} more below", remaining),
+                Style::default().fg(Color::Rgb(100, 100, 100)),
+            )));
         }
 
         frame.render_widget(Paragraph::new(Text::from(lines)), inner);

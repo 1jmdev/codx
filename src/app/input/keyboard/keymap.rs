@@ -8,6 +8,8 @@ pub(super) enum GlobalCommand {
     ShowFilePalette,
     ShowSearch,
     ShowSearchReplace,
+    ShowGrepSearch,
+    ShowGrepReplace,
     TriggerSuggest,
     ToggleSidebar,
     Save,
@@ -52,6 +54,16 @@ const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     Binding {
         command: GlobalCommand::ShowSearchReplace,
         keys: &["ctrl+h"],
+        scope: Scope::Any,
+    },
+    Binding {
+        command: GlobalCommand::ShowGrepSearch,
+        keys: &["ctrl+shift+f"],
+        scope: Scope::Any,
+    },
+    Binding {
+        command: GlobalCommand::ShowGrepReplace,
+        keys: &["ctrl+shift+h"],
         scope: Scope::Any,
     },
     Binding {

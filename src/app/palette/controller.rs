@@ -7,6 +7,8 @@ use super::{
     types::{PaletteAction, PaletteCommand, PaletteKind, PaletteState, PaletteView},
 };
 
+const VISIBLE_ROWS: usize = 8;
+
 impl App {
     pub(crate) fn open_palette(&mut self, kind: PaletteKind) {
         if kind == PaletteKind::Files {
@@ -18,27 +20,46 @@ impl App {
         self.palette = Some(PaletteState {
             kind,
             query: String::new(),
+            replace_text: String::new(),
             selected: 0,
         });
     }
 
     pub(crate) fn palette_view(&self) -> Option<PaletteView> {
         let state = self.palette.as_ref()?;
-        let rows = self
-            .palette_matches(state)
-            .into_iter()
-            .map(|item| item.label)
+        let all_matches = self.palette_matches(state);
+
+        let scroll = if state.selected >= VISIBLE_ROWS {
+            state.selected - VISIBLE_ROWS + 1
+        } else {
+            0
+        };
+
+        let rows = all_matches
+            .iter()
+            .skip(scroll)
+            .take(VISIBLE_ROWS)
+            .map(|item| item.label.clone())
             .collect();
 
+        let visible_selected = state.selected.saturating_sub(scroll);
+
+        let (title, show_replace) = match state.kind {
+            PaletteKind::Files => ("Go To File", false),
+            PaletteKind::Commands => ("Command Palette", false),
+            PaletteKind::GrepSearch => ("Search in Project", false),
+            PaletteKind::GrepReplace => ("Replace in Project", true),
+        };
+
         Some(PaletteView {
-            title: if state.kind == PaletteKind::Files {
-                "Go To File"
-            } else {
-                "Command Palette"
-            },
+            title,
             query: state.query.clone(),
+            replace_text: state.replace_text.clone(),
             rows,
-            selected: state.selected,
+            selected: visible_selected,
+            scroll,
+            total_matches: all_matches.len(),
+            show_replace,
         })
     }
 
@@ -62,6 +83,17 @@ impl App {
                     .unwrap_or(0);
                 if let Some(state) = self.palette.as_mut() {
                     state.selected = (state.selected + 1).min(max);
+                }
+            }
+            KeyCode::Tab => {
+                let is_grep_replace = self
+                    .palette
+                    .as_ref()
+                    .is_some_and(|s| s.kind == PaletteKind::GrepReplace);
+                if is_grep_replace {
+                    if let Some(state) = self.palette.as_mut() {
+                        std::mem::swap(&mut state.query, &mut state.replace_text);
+                    }
                 }
             }
             KeyCode::Backspace => {
@@ -101,6 +133,17 @@ impl App {
             PaletteAction::OpenFile(path) => {
                 if let Err(error) = self.open_file(path) {
                     self.status = format!("Open failed: {error}");
+                }
+            }
+            PaletteAction::OpenFileAt(path, line, col) => {
+                if let Err(error) = self.open_file(path) {
+                    self.status = format!("Open failed: {error}");
+                } else {
+                    self.cursor_line = line.min(self.lines.len().saturating_sub(1));
+                    self.cursor_col = col;
+                    self.preferred_col = col;
+                    let view_height = self.ui.editor_inner.height as usize;
+                    self.ensure_cursor_visible(view_height);
                 }
             }
             PaletteAction::Command(PaletteCommand::ReloadLsp) => self.reload_lsp_server(),

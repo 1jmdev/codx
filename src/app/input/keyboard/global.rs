@@ -26,6 +26,14 @@ impl App {
                 self.open_search_replace(true);
                 true
             }
+            GlobalCommand::ShowGrepSearch => {
+                self.open_palette(PaletteKind::GrepSearch);
+                true
+            }
+            GlobalCommand::ShowGrepReplace => {
+                self.open_palette(PaletteKind::GrepReplace);
+                true
+            }
             GlobalCommand::TriggerSuggest => {
                 self.trigger_completion();
                 true
