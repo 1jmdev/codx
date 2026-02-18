@@ -17,6 +17,12 @@ pub(crate) struct PaletteState {
 }
 
 #[derive(Clone, Debug)]
+pub(crate) struct PreviewTarget {
+    pub(crate) path: PathBuf,
+    pub(crate) focus_line: usize,
+}
+
+#[derive(Clone, Debug)]
 pub(crate) struct PaletteView {
     pub(crate) title: &'static str,
     pub(crate) query: String,
@@ -26,6 +32,7 @@ pub(crate) struct PaletteView {
     pub(crate) scroll: usize,
     pub(crate) total_matches: usize,
     pub(crate) show_replace: bool,
+    pub(crate) preview: Option<PreviewTarget>,
 }
 
 #[derive(Clone, Copy, Debug)]

@@ -14,9 +14,12 @@ impl App {
             .constraints([Constraint::Min(1), Constraint::Length(1)])
             .split(root);
 
+        let palette_active = self.palette.is_some();
+        let show_sidebar = self.sidebar_open && !palette_active;
+
         let content = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(if self.sidebar_open {
+            .constraints(if show_sidebar {
                 [Constraint::Percentage(78), Constraint::Percentage(22)]
             } else {
                 [Constraint::Percentage(100), Constraint::Length(0)]
@@ -24,7 +27,7 @@ impl App {
             .split(vertical[0]);
 
         self.draw_editor(frame, content[0]);
-        if self.sidebar_open {
+        if show_sidebar {
             self.draw_tree(frame, content[1]);
         } else {
             self.ui.tree_inner = Rect::default();

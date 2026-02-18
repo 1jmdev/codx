@@ -4,10 +4,10 @@ use crate::app::App;
 
 use super::{
     files::collect_project_files,
-    types::{PaletteAction, PaletteCommand, PaletteKind, PaletteState, PaletteView},
+    types::{PaletteAction, PaletteCommand, PaletteKind, PaletteState, PaletteView, PreviewTarget},
 };
 
-const VISIBLE_ROWS: usize = 8;
+const VISIBLE_ROWS: usize = 16;
 
 impl App {
     pub(crate) fn open_palette(&mut self, kind: PaletteKind) {
@@ -51,6 +51,21 @@ impl App {
             PaletteKind::GrepReplace => ("Replace in Project", true),
         };
 
+        // Build preview target from the selected match
+        let preview = all_matches
+            .get(state.selected)
+            .and_then(|m| match &m.action {
+                PaletteAction::OpenFile(path) => Some(PreviewTarget {
+                    path: path.clone(),
+                    focus_line: 0,
+                }),
+                PaletteAction::OpenFileAt(path, line, _col) => Some(PreviewTarget {
+                    path: path.clone(),
+                    focus_line: *line,
+                }),
+                PaletteAction::Command(_) => None,
+            });
+
         Some(PaletteView {
             title,
             query: state.query.clone(),
@@ -60,6 +75,7 @@ impl App {
             scroll,
             total_matches: all_matches.len(),
             show_replace,
+            preview,
         })
     }
 
