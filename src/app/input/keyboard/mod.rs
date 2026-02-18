@@ -20,6 +20,10 @@ impl App {
             return;
         }
 
+        if self.handle_search_replace_key(key) {
+            return;
+        }
+
         if self.handle_global_shortcuts(key) {
             return;
         }

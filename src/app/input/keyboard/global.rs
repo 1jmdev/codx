@@ -1,6 +1,6 @@
-use crate::app::{App, Focus, palette::PaletteKind};
+use crate::app::{palette::PaletteKind, App, Focus};
 
-use super::keymap::{GlobalCommand, resolve_global_command};
+use super::keymap::{resolve_global_command, GlobalCommand};
 use crossterm::event::KeyEvent;
 
 impl App {
@@ -16,6 +16,14 @@ impl App {
             }
             GlobalCommand::ShowFilePalette => {
                 self.open_palette(PaletteKind::Files);
+                true
+            }
+            GlobalCommand::ShowSearch => {
+                self.open_search_replace(false);
+                true
+            }
+            GlobalCommand::ShowSearchReplace => {
+                self.open_search_replace(true);
                 true
             }
             GlobalCommand::TriggerSuggest => {

@@ -44,6 +44,9 @@ impl App {
             self.syntax
                 .highlight_visible(self.current_file.as_deref(), &self.lines, start, end);
 
+        let search_matches: Vec<(usize, usize, usize)> = self.search_match_ranges().to_vec();
+        let active_match_idx = self.search_current_match_idx();
+
         let number_width = self.line_number_width();
         let mut rendered = Vec::new();
         for (row, spans) in highlighted.into_iter().enumerate() {
@@ -94,11 +97,81 @@ impl App {
                     .patch_style(row_style),
                 );
             }
+
+            let line_matches: Vec<(usize, usize, bool)> = search_matches
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, &(l, cs, ce))| {
+                    if l == line_index {
+                        Some((cs, ce, Some(idx) == active_match_idx))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            if !line_matches.is_empty() {
+                line_spans = apply_search_highlights(line_spans, &line_matches, number_width + 1);
+            }
+
             rendered.push(Line::from(line_spans));
         }
 
         frame.render_widget(Paragraph::new(Text::from(rendered)), inner);
     }
+}
+
+fn apply_search_highlights(
+    spans: Vec<Span<'static>>,
+    matches: &[(usize, usize, bool)],
+    gutter_width: usize,
+) -> Vec<Span<'static>> {
+    let mut chars: Vec<(char, Style)> = Vec::new();
+    for span in &spans {
+        let s = span.style;
+        for ch in span.content.chars() {
+            chars.push((ch, s));
+        }
+    }
+
+    let text_start = gutter_width;
+    for &(col_start, col_end, is_active) in matches {
+        let abs_start = text_start + col_start;
+        let abs_end = text_start + col_end;
+        let bg = if is_active {
+            Color::Rgb(255, 150, 30) // orange — active match
+        } else {
+            Color::Rgb(80, 100, 60) // muted green — other matches
+        };
+        let fg = if is_active {
+            Color::Black
+        } else {
+            Color::White
+        };
+        for i in abs_start..abs_end.min(chars.len()) {
+            chars[i].1 = Style::default().fg(fg).bg(bg);
+        }
+    }
+
+    let mut out: Vec<Span<'static>> = Vec::new();
+    let mut buf = String::new();
+    let mut cur_style = Style::default();
+    for (ch, style) in chars {
+        if style == cur_style {
+            buf.push(ch);
+        } else {
+            if !buf.is_empty() {
+                out.push(Span::styled(buf.clone(), cur_style));
+                buf.clear();
+            }
+            buf.push(ch);
+            cur_style = style;
+        }
+    }
+    if !buf.is_empty() {
+        out.push(Span::styled(buf, cur_style));
+    }
+    out
 }
 
 fn push_selected_span(

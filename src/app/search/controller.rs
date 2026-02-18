@@ -2,18 +2,34 @@ use super::types::{SearchField, SearchReplaceState};
 use crate::app::{App, Focus};
 
 impl App {
-    pub(crate) fn open_search_replace(&mut self) {
+    pub(crate) fn open_search_replace(&mut self, show_replace: bool) {
         self.completion = None;
         self.palette = None;
         self.focus = Focus::Editor;
 
+        if let Some(sr) = self.search_replace.as_mut() {
+            sr.show_replace = show_replace;
+            sr.focused_field = if show_replace {
+                SearchField::Replace
+            } else {
+                SearchField::Search
+            };
+            return;
+        }
+
         let query = self.selected_text().unwrap_or_default();
+        let focused_field = if show_replace {
+            SearchField::Replace
+        } else {
+            SearchField::Search
+        };
         let mut state = SearchReplaceState {
             query,
             replacement: String::new(),
-            focused_field: SearchField::Search,
+            focused_field,
             matches: Vec::new(),
             current_match: 0,
+            show_replace,
         };
         self.recompute_matches(&mut state);
         self.search_replace = Some(state);

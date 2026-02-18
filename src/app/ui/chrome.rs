@@ -31,12 +31,18 @@ impl App {
         }
         self.draw_completion(frame);
         self.draw_palette(frame);
+        self.draw_search_replace(frame);
         self.draw_status(frame, vertical[1]);
         self.place_cursor(frame);
     }
 
     fn place_cursor(&self, frame: &mut ratatui::Frame) {
         if let Some(pos) = self.palette_cursor_position(frame.area()) {
+            frame.set_cursor_position(pos);
+            return;
+        }
+
+        if let Some(pos) = self.search_replace_cursor_position(frame.area()) {
             frame.set_cursor_position(pos);
             return;
         }

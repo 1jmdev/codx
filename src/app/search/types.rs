@@ -14,4 +14,6 @@ pub(crate) struct SearchReplaceState {
     pub(crate) matches: Vec<(usize, usize, usize)>,
     /// Index of the currently highlighted match.
     pub(crate) current_match: usize,
+    /// `false` = search only (Ctrl+F).  `true` = search + replace (Ctrl+H).
+    pub(crate) show_replace: bool,
 }

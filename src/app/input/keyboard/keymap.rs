@@ -6,6 +6,8 @@ use crate::app::Focus;
 pub(super) enum GlobalCommand {
     ShowCommandPalette,
     ShowFilePalette,
+    ShowSearch,
+    ShowSearchReplace,
     TriggerSuggest,
     ToggleSidebar,
     Save,
@@ -40,6 +42,16 @@ const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     Binding {
         command: GlobalCommand::ShowFilePalette,
         keys: &["ctrl+p"],
+        scope: Scope::Any,
+    },
+    Binding {
+        command: GlobalCommand::ShowSearch,
+        keys: &["ctrl+f"],
+        scope: Scope::Any,
+    },
+    Binding {
+        command: GlobalCommand::ShowSearchReplace,
+        keys: &["ctrl+h"],
         scope: Scope::Any,
     },
     Binding {
