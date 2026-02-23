@@ -6,7 +6,7 @@ use std::{
 };
 
 use crossterm::event::{self, Event};
-use ratatui::{Terminal, layout::Rect};
+use ratatui::{layout::Rect, Terminal};
 
 use crate::app::{
     lsp::LspManager, palette::PaletteState, search::SearchReplaceState, syntax::SyntaxEngine,
@@ -54,6 +54,7 @@ pub(crate) struct EditorSnapshot {
 pub(crate) struct CompletionItem {
     pub(crate) label: String,
     pub(crate) insert_text: String,
+    pub(crate) match_text: String,
     pub(crate) replace_start_col: usize,
     pub(crate) replace_end_col: usize,
     pub(crate) sort_text: String,
