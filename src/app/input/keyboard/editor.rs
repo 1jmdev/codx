@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::editor::line_len_chars;
+use crate::app::editor::{line_len_chars, previous_word_boundary};
 use crate::app::{App, Focus};
 
 impl App {
@@ -10,17 +10,19 @@ impl App {
             KeyCode::Up => self.move_cursor_up(selecting),
             KeyCode::Down => self.move_cursor_down(selecting),
             KeyCode::Left => {
-                if selecting {
-                    self.move_cursor_word_left(true);
+                let word = key.modifiers.contains(KeyModifiers::CONTROL);
+                if word {
+                    self.move_cursor_word_left(selecting);
                 } else {
-                    self.move_cursor_left(false);
+                    self.move_cursor_left(selecting);
                 }
             }
             KeyCode::Right => {
-                if selecting {
-                    self.move_cursor_word_right(true);
+                let word = key.modifiers.contains(KeyModifiers::CONTROL);
+                if word {
+                    self.move_cursor_word_right(selecting);
                 } else {
-                    self.move_cursor_right(false);
+                    self.move_cursor_right(selecting);
                 }
             }
             KeyCode::Home => {
@@ -43,7 +45,13 @@ impl App {
             }
             KeyCode::Tab => self.indent_selection_or_insert_tab(),
             KeyCode::BackTab => self.outdent_selection(),
-            KeyCode::Backspace => self.backspace(),
+            KeyCode::Backspace => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    self.delete_word_backward();
+                } else {
+                    self.backspace();
+                }
+            }
             KeyCode::Delete => self.delete(),
             KeyCode::Enter => self.insert_newline(),
             KeyCode::Esc => {
@@ -179,27 +187,6 @@ impl App {
 
 fn is_word_char(ch: char) -> bool {
     ch.is_alphanumeric() || ch == '_'
-}
-
-fn previous_word_boundary(line: &str, col: usize) -> usize {
-    let chars: Vec<char> = line.chars().collect();
-    let mut idx = col.min(chars.len());
-    while idx > 0 && chars[idx - 1].is_whitespace() {
-        idx -= 1;
-    }
-    if idx == 0 {
-        return 0;
-    }
-
-    let mode = is_word_char(chars[idx - 1]);
-    while idx > 0 {
-        let ch = chars[idx - 1];
-        if ch.is_whitespace() || is_word_char(ch) != mode {
-            break;
-        }
-        idx -= 1;
-    }
-    idx
 }
 
 fn next_word_boundary(line: &str, col: usize) -> usize {

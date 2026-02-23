@@ -1,4 +1,4 @@
-use crate::app::{App, state::CursorPos};
+use crate::app::{state::CursorPos, App};
 
 use super::{byte_index_for_char, line_len_chars};
 

@@ -1,4 +1,4 @@
-use crate::app::{App, editor::TAB_WIDTH};
+use crate::app::{editor::TAB_WIDTH, App};
 
 use super::{byte_index_for_char, leading_indent_width, line_len_chars};
 
@@ -63,6 +63,44 @@ impl App {
             self.selection_anchor = None;
             self.mark_changed();
         }
+    }
+
+    pub(crate) fn delete_word_backward(&mut self) {
+        if self.has_selection() {
+            self.begin_edit();
+            self.delete_selection_inner();
+            self.mark_changed();
+            return;
+        }
+
+        if self.cursor_col == 0 {
+            // Merge with previous line
+            if self.cursor_line > 0 {
+                self.begin_edit();
+                let current = self.lines.remove(self.cursor_line);
+                self.cursor_line -= 1;
+                let prev_len = line_len_chars(&self.lines[self.cursor_line]);
+                self.lines[self.cursor_line].push_str(&current);
+                self.cursor_col = prev_len;
+                self.preferred_col = self.cursor_col;
+                self.selection_anchor = None;
+                self.mark_changed();
+            }
+            return;
+        }
+
+        self.begin_edit();
+        let new_col = {
+            let line = &self.lines[self.cursor_line];
+            super::previous_word_boundary(line, self.cursor_col)
+        };
+        let start_byte = byte_index_for_char(&self.lines[self.cursor_line], new_col);
+        let end_byte = byte_index_for_char(&self.lines[self.cursor_line], self.cursor_col);
+        self.lines[self.cursor_line].replace_range(start_byte..end_byte, "");
+        self.cursor_col = new_col;
+        self.preferred_col = self.cursor_col;
+        self.selection_anchor = None;
+        self.mark_changed();
     }
 
     pub(crate) fn delete(&mut self) {
