@@ -39,7 +39,7 @@ struct Binding {
 const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     Binding {
         command: GlobalCommand::ShowCommandPalette,
-        keys: &["f1", "ctrl+shift+p"],
+        keys: &["f1"],
         scope: Scope::Any,
     },
     Binding {
@@ -59,12 +59,12 @@ const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     },
     Binding {
         command: GlobalCommand::ShowGrepSearch,
-        keys: &["ctrl+shift+f"],
+        keys: &["ctrl+alt+f"],
         scope: Scope::Any,
     },
     Binding {
         command: GlobalCommand::ShowGrepReplace,
-        keys: &["ctrl+shift+h"],
+        keys: &["ctrl+alt+h"],
         scope: Scope::Any,
     },
     Binding {
@@ -104,7 +104,7 @@ const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     },
     Binding {
         command: GlobalCommand::DeleteLine,
-        keys: &["ctrl+shift+k"],
+        keys: &["ctrl+alt+k"],
         scope: Scope::Editor,
     },
     Binding {
@@ -114,7 +114,7 @@ const DEFAULT_GLOBAL_KEYBINDINGS: &[Binding] = &[
     },
     Binding {
         command: GlobalCommand::ActivateTreeItem,
-        keys: &["ctrl+shift+e"],
+        keys: &["ctrl+alt+e"],
         scope: Scope::FileTree,
     },
 ];
@@ -170,6 +170,19 @@ fn parse_keybinding(spec: &str) -> Option<Shortcut> {
             "shift" => modifiers |= KeyModifiers::SHIFT,
             "alt" => modifiers |= KeyModifiers::ALT,
             "space" => code = Some(KeyCode::Char(' ')),
+            "backspace" => code = Some(KeyCode::Backspace),
+            "delete" | "del" => code = Some(KeyCode::Delete),
+            "enter" | "return" => code = Some(KeyCode::Enter),
+            "tab" => code = Some(KeyCode::Tab),
+            "esc" | "escape" => code = Some(KeyCode::Esc),
+            "up" => code = Some(KeyCode::Up),
+            "down" => code = Some(KeyCode::Down),
+            "left" => code = Some(KeyCode::Left),
+            "right" => code = Some(KeyCode::Right),
+            "home" => code = Some(KeyCode::Home),
+            "end" => code = Some(KeyCode::End),
+            "pageup" | "page_up" => code = Some(KeyCode::PageUp),
+            "pagedown" | "page_down" => code = Some(KeyCode::PageDown),
             _ => {
                 if let Some(function) = token.strip_prefix('f')
                     && let Ok(value) = function.parse::<u8>()
