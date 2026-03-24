@@ -2,6 +2,7 @@ use std::path::Path;
 
 use crate::app::{App, AppError, AppMode, CommandBarMode, FocusTarget, MessageKind};
 use crate::core::History;
+use crate::syntax::language_for_path;
 
 impl App {
     pub(crate) fn request_quit(&mut self) {
@@ -57,7 +58,12 @@ impl App {
         } else {
             let loaded = crate::file::load_document(path)?;
             let saved_snapshot = loaded.document.text();
-            self.push_buffer(loaded.document, History::default(), saved_snapshot, loaded.encoding)
+            self.push_buffer(
+                loaded.document,
+                History::default(),
+                saved_snapshot,
+                loaded.encoding,
+            )
         };
         self.switch_to_buffer(buffer_id);
         self.recent_files.record(path);
@@ -91,8 +97,13 @@ impl App {
                     if let Ok(loaded) = crate::file::load_document(&path) {
                         self.buffers[idx].document = loaded.document;
                         self.buffers[idx].encoding = loaded.encoding;
-                        self.buffers[idx].saved_snapshot =
-                            self.buffers[idx].document.text();
+                        self.buffers[idx].saved_snapshot = self.buffers[idx].document.text();
+                        let language_id = self.buffers[idx]
+                            .document
+                            .path()
+                            .and_then(language_for_path);
+                        let _ = self.buffers[idx].syntax.set_language_id(language_id);
+                        self.buffers[idx].syntax.mark_dirty();
                     }
                     need_refresh = true;
                 }
@@ -113,9 +124,7 @@ impl App {
             self.file_finder.refresh();
         }
 
-        if !self.pending_conflict_paths.is_empty()
-            && matches!(self.mode, AppMode::Editing)
-        {
+        if !self.pending_conflict_paths.is_empty() && matches!(self.mode, AppMode::Editing) {
             self.mode = AppMode::ExternalChangeConflict;
         }
     }

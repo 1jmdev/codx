@@ -54,8 +54,15 @@ impl Buffer {
     pub fn cursor_to_char(&self, cursor: Cursor) -> usize {
         let line = cursor.line.min(self.line_count().saturating_sub(1));
         let line_start = self.line_to_char(line);
-        let column = cursor.column.min(self.line_len_chars_including_newline(line));
+        let column = cursor
+            .column
+            .min(self.line_len_chars_including_newline(line));
         line_start + column
+    }
+
+    pub fn cursor_to_byte(&self, cursor: Cursor) -> usize {
+        let char_index = self.cursor_to_char(cursor);
+        self.rope.char_to_byte(char_index)
     }
 
     pub fn char_to_cursor(&self, char_index: usize) -> Cursor {

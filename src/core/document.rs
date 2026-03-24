@@ -58,6 +58,10 @@ impl Document {
         self.buffer.line_to_byte(line)
     }
 
+    pub fn cursor_to_byte(&self, cursor: Cursor) -> usize {
+        self.buffer.cursor_to_byte(cursor)
+    }
+
     pub fn last_line_index(&self) -> usize {
         self.line_count().saturating_sub(1)
     }
@@ -98,7 +102,10 @@ impl Document {
 
     pub fn line_end_including_newline(&self, line: usize) -> Cursor {
         let clamped = line.min(self.last_line_index());
-        Cursor::new(clamped, self.buffer.line_len_chars_including_newline(clamped))
+        Cursor::new(
+            clamped,
+            self.buffer.line_len_chars_including_newline(clamped),
+        )
     }
 
     pub fn previous_position(&self, cursor: Cursor) -> Cursor {
@@ -220,7 +227,10 @@ impl Document {
             }
         } else {
             let word_class = is_word_char(chars[col]);
-            while col < effective_len && !matches!(chars[col], ' ' | '\t') && is_word_char(chars[col]) == word_class {
+            while col < effective_len
+                && !matches!(chars[col], ' ' | '\t')
+                && is_word_char(chars[col]) == word_class
+            {
                 col += 1;
             }
             while col < effective_len && matches!(chars[col], ' ' | '\t') {

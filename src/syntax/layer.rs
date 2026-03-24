@@ -1,4 +1,4 @@
-use tree_sitter::{Parser, Tree};
+use tree_sitter::{InputEdit, Parser, Point, Tree};
 
 use crate::syntax::{LanguageId, SyntaxError};
 
@@ -38,6 +38,45 @@ impl SyntaxLayer {
             }
             None => Err(SyntaxError::ParseFailed),
         }
+    }
+
+    pub fn apply_edit(
+        &mut self,
+        start_byte: usize,
+        old_end_byte: usize,
+        new_end_byte: usize,
+        start_position: Point,
+        old_end_position: Point,
+        new_end_position: Point,
+    ) {
+        if let Some(tree) = self.tree.as_mut() {
+            tree.edit(&InputEdit {
+                start_byte,
+                old_end_byte,
+                new_end_byte,
+                start_position,
+                old_end_position,
+                new_end_position,
+            });
+        }
+        self.dirty = true;
+    }
+
+    pub fn set_language_id(&mut self, language_id: Option<LanguageId>) -> Result<(), SyntaxError> {
+        self.language_id = language_id;
+        self.tree = None;
+
+        if let Some(id) = self.language_id {
+            let lang = id.ts_language();
+            self.parser
+                .set_language(&lang)
+                .map_err(|error| SyntaxError::LanguageSetFailed(error.to_string()))?;
+            self.dirty = true;
+        } else {
+            self.dirty = false;
+        }
+
+        Ok(())
     }
 
     pub fn mark_dirty(&mut self) {

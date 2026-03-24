@@ -6,6 +6,7 @@ use ratatui::layout::Size;
 use crate::app::{App, AppError, AppMode, CommandBarMode, FocusTarget};
 use crate::editor::Command;
 use crate::keymap::map_key_event;
+use crate::syntax::language_for_path;
 
 pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
     let mut terminal_session = crate::app::TerminalSession::enter()?;
@@ -57,7 +58,9 @@ impl App {
 
         match self.mode {
             AppMode::ConfirmQuit => self.handle_confirm_quit_key(key_event),
-            AppMode::ConfirmDeleteExplorerEntry => self.handle_confirm_delete_explorer_key(key_event),
+            AppMode::ConfirmDeleteExplorerEntry => {
+                self.handle_confirm_delete_explorer_key(key_event)
+            }
             AppMode::ExternalChangeConflict => self.handle_external_change_conflict_key(key_event),
             AppMode::CommandBar(mode) => self.handle_command_bar_key(mode, key_event),
             AppMode::Editing => {
@@ -131,6 +134,9 @@ impl App {
                             buf.document = loaded.document;
                             buf.encoding = loaded.encoding;
                             buf.saved_snapshot = buf.document.text();
+                            let language_id = buf.document.path().and_then(language_for_path);
+                            let _ = buf.syntax.set_language_id(language_id);
+                            buf.syntax.mark_dirty();
                         }
                     }
                     self.pending_conflict_paths.remove(0);
