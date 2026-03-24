@@ -1,4 +1,5 @@
 use crate::app::App;
+use crate::core::Cursor;
 
 impl App {
     pub(crate) fn trigger_completion(&mut self) {
@@ -21,7 +22,13 @@ impl App {
         } else {
             item.insert_text
         };
-        self.insert_text(&text, false);
+        let cursor = self.active_pane().cursor();
+        let replace_start = completion_prefix_start(self.active_document(), cursor);
+        if replace_start != cursor {
+            self.apply_edit(replace_start, cursor, &text, false);
+        } else {
+            self.insert_text(&text, false);
+        }
         self.lsp.completion.close();
     }
 
@@ -32,4 +39,21 @@ impl App {
     pub(crate) fn completion_active(&self) -> bool {
         self.lsp.completion.active
     }
+}
+
+fn completion_prefix_start(document: &crate::core::Document, cursor: Cursor) -> Cursor {
+    let line = document.raw_line_text(cursor.line);
+    let chars = line.chars().collect::<Vec<_>>();
+    let mut column = cursor.column.min(chars.len());
+
+    while column > 0 {
+        let character = chars[column - 1];
+        if character.is_alphanumeric() || character == '_' {
+            column -= 1;
+            continue;
+        }
+        break;
+    }
+
+    Cursor::new(cursor.line, column)
 }
