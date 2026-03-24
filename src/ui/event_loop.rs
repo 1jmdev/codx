@@ -33,6 +33,9 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
                     {
                         app.handle_key_event(key_event)?;
                     }
+                    Event::Paste(text) => {
+                        app.handle_paste_text(&text);
+                    }
                     Event::Resize(width, height) => {
                         app.set_terminal_size(Size::new(width, height));
                         app.ensure_cursor_visible();
@@ -50,6 +53,35 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
 }
 
 impl App {
+    pub(crate) fn handle_paste_text(&mut self, text: &str) {
+        let normalized = text.replace("\r\n", "\n").replace('\r', "\n");
+
+        if self.picker.is_some() {
+            if let Some(picker) = self.picker.as_mut() {
+                let mut query = picker.query().to_owned();
+                query.push_str(&normalized);
+                picker.set_query(query);
+            }
+            self.refresh_picker();
+            return;
+        }
+
+        match self.mode {
+            AppMode::CommandBar(mode) => {
+                self.command_bar.input.push_str(&normalized);
+                if matches!(mode, CommandBarMode::Search) {
+                    self.update_search_preview();
+                }
+            }
+            AppMode::Editing => {
+                if self.focus == FocusTarget::Editor {
+                    self.insert_text(&normalized, false);
+                }
+            }
+            _ => {}
+        }
+    }
+
     pub(crate) fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
         if !matches!(
             self.mode,

@@ -2,7 +2,9 @@ use std::io::{self, Stdout};
 
 use crossterm::ExecutableCommand;
 use crossterm::cursor::Show;
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
+use crossterm::event::{
+    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+};
 use crossterm::execute;
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
@@ -21,6 +23,10 @@ impl TerminalSession {
             .terminal
             .backend_mut()
             .execute(crossterm::terminal::SetTitle("codx"))?;
+        session
+            .terminal
+            .backend_mut()
+            .execute(EnableBracketedPaste)?;
         session.terminal.backend_mut().execute(EnableMouseCapture)?;
         session.terminal.clear()?;
         Ok(session)
@@ -34,6 +40,11 @@ impl TerminalSession {
 impl Drop for TerminalSession {
     fn drop(&mut self) {
         let _ = ratatui::restore();
-        let _ = execute!(io::stdout(), DisableMouseCapture, Show);
+        let _ = execute!(
+            io::stdout(),
+            DisableBracketedPaste,
+            DisableMouseCapture,
+            Show
+        );
     }
 }
