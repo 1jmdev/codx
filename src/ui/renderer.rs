@@ -23,6 +23,7 @@ pub fn render(frame: &mut Frame<'_>, app: &App) {
     render_statusline(frame.buffer_mut(), areas[1], app);
     render_message_or_command_bar(frame.buffer_mut(), areas[2], app);
     render_picker_overlay(frame, app);
+    render_delete_confirm_overlay(frame, app);
 
     let cursor = screen_cursor_position(app, areas[0], areas[2]);
     frame.set_cursor_position(cursor);
@@ -293,6 +294,65 @@ fn render_message_or_command_bar(buffer: &mut Buffer, area: Rect, app: &App) {
     };
 
     Paragraph::new(content).style(style).render(area, buffer);
+}
+
+fn render_delete_confirm_overlay(frame: &mut Frame<'_>, app: &App) {
+    if !matches!(app.mode(), AppMode::ConfirmDeleteExplorerEntry) {
+        return;
+    }
+
+    let palette = Palette::mocha();
+
+    // All styles here are fg-only so they sit cleanly on the popup background
+    let blue   = Style::default().fg(palette.blue);
+    let bold_blue = Style::default().fg(palette.blue).add_modifier(Modifier::BOLD);
+    let bold_fg = Style::default().fg(palette.text).add_modifier(Modifier::BOLD);
+    let dim    = Style::default().fg(palette.subtle);
+    let border = Style::default().bg(palette.mantle).fg(palette.blue);
+
+    let entry_name = app
+        .explorer()
+        .selected_entry()
+        .and_then(|e| e.path.file_name())
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| String::from("this entry"));
+
+    let popup = centered_rect(frame.area(), 40, 20);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(border)
+        .style(Style::default().bg(palette.mantle))
+        .title(Span::styled(" \u{f1f8} Delete? ", bold_blue));
+    let inner = block.inner(popup);
+    let areas = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(inner);
+
+    Clear.render(popup, frame.buffer_mut());
+    block.render(popup, frame.buffer_mut());
+
+    Paragraph::new(Line::from(vec![
+        Span::styled("\u{f15b} ", blue),
+        Span::styled(entry_name, bold_fg),
+    ]))
+    .render(areas[0], frame.buffer_mut());
+
+    Paragraph::new(Line::from(Span::styled(
+        "will be permanently deleted.",
+        dim,
+    )))
+    .render(areas[1], frame.buffer_mut());
+
+    Paragraph::new(Line::from(vec![
+        Span::styled("y", bold_blue),
+        Span::styled(" confirm  ", dim),
+        Span::styled("n/Esc", bold_blue),
+        Span::styled(" cancel", dim),
+    ]))
+    .render(areas[2], frame.buffer_mut());
 }
 
 fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {

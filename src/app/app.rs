@@ -9,6 +9,7 @@ use crate::util::{Clipboard, DetectedEncoding};
 pub enum AppMode {
     Editing,
     ConfirmQuit,
+    ConfirmDeleteExplorerEntry,
     CommandBar(CommandBarMode),
 }
 

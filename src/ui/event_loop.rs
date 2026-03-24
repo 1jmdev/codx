@@ -41,7 +41,7 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
 
 impl App {
     pub(crate) fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
-        if !matches!(self.mode, AppMode::ConfirmQuit) {
+        if !matches!(self.mode, AppMode::ConfirmQuit | AppMode::ConfirmDeleteExplorerEntry) {
             self.clear_message();
         }
 
@@ -51,6 +51,7 @@ impl App {
 
         match self.mode {
             AppMode::ConfirmQuit => self.handle_confirm_quit_key(key_event),
+            AppMode::ConfirmDeleteExplorerEntry => self.handle_confirm_delete_explorer_key(key_event),
             AppMode::CommandBar(mode) => self.handle_command_bar_key(mode, key_event),
             AppMode::Editing => {
                 if self.focus == FocusTarget::Explorer && self.explorer.visible() {
@@ -99,7 +100,25 @@ impl App {
             }
             KeyCode::Char('A') => self.begin_explorer_create_directory(),
             KeyCode::Char('r') => self.begin_explorer_rename(),
-            KeyCode::Char('d') => self.delete_selected_explorer_entry()?,
+            KeyCode::Char('d') => {
+                if self.explorer.selected_entry().is_some() {
+                    self.mode = AppMode::ConfirmDeleteExplorerEntry;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_confirm_delete_explorer_key(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
+        match key_event.code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                self.mode = AppMode::Editing;
+                self.delete_selected_explorer_entry()?;
+            }
+            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                self.mode = AppMode::Editing;
+            }
             _ => {}
         }
         Ok(())
