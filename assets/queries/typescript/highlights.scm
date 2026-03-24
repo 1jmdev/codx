@@ -8,7 +8,7 @@
   "export" "extends" "finally" "for" "from" "if" "implements" "import"
   "in" "infer" "instanceof" "interface" "keyof" "let" "module" "namespace"
   "new" "of" "override" "readonly" "satisfies" "static" "switch" "target"
-  "this" "throw" "try" "type" "typeof" "unique" "var" "void" "while"
+  "throw" "try" "type" "typeof" "var" "void" "while"
   "with" "yield"
 ] @keyword
 
@@ -47,7 +47,6 @@
 
 ; Functions
 (function_declaration name: (identifier) @function)
-(function name: (identifier) @function)
 (method_definition name: (property_identifier) @function.method)
 (call_expression function: (identifier) @function)
 (call_expression function: (member_expression property: (property_identifier) @function.method))
@@ -61,7 +60,6 @@
 
 ; Variables
 (identifier) @variable
-(this) @variable.builtin
 
 ; Properties
 (property_identifier) @property

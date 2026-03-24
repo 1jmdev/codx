@@ -7,13 +7,9 @@
 
 ; Tables
 (table (bare_key) @namespace)
-(array_table (bare_key) @namespace)
 
 ; Strings
 (string) @string
-(literal_string) @string
-(multiline_string) @string
-(multiline_literal_string) @string
 (escape_sequence) @string.escape
 
 ; Numbers

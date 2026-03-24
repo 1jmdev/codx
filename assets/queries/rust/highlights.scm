@@ -5,10 +5,10 @@
 
 ; Keywords
 [
-  "as" "async" "await" "break" "const" "continue" "crate"
+  "as" "async" "await" "break" "const" "continue"
   "dyn" "else" "enum" "extern" "for" "if" "impl" "in"
-  "let" "loop" "match" "mod" "move" "mut" "pub" "ref"
-  "self" "Self" "static" "struct" "super" "trait" "type"
+  "let" "loop" "match" "mod" "move" "pub" "ref"
+  "static" "struct" "trait" "type"
   "unsafe" "use" "where" "while"
 ] @keyword
 
@@ -53,7 +53,6 @@
 
 ; Variables
 (identifier) @variable
-(self) @variable.builtin
 (parameter pattern: (identifier) @variable.parameter)
 
 ; Constants
@@ -65,7 +64,6 @@
 (inner_attribute_item) @attribute
 
 ; Lifetimes
-(lifetime_identifier) @label
 
 ; Namespaces
 (use_declaration argument: (scoped_identifier path: (identifier) @namespace))

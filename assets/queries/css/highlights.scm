@@ -23,8 +23,8 @@
 (unit) @keyword.type
 
 ; Keywords
-["@media" "@keyframes" "@import" "@charset" "@namespace" "@supports" "@layer"] @keyword
-["from" "to" "not" "and" "or" "only" "selector"] @keyword
+["@media" "@keyframes" "@import" "@charset" "@namespace" "@supports"] @keyword
+["to" "not" "and" "or" "only" "selector"] @keyword
 
 ; Operators
 ["," ";" ":"] @punctuation.delimiter
@@ -33,4 +33,4 @@
 
 ; Functions
 (function_name) @function
-(call_expression function: (function_name) @function)
+(call_expression (function_name) @function)

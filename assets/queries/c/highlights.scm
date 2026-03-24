@@ -7,11 +7,11 @@
   "enum" "extern" "for" "goto" "if" "inline" "register"
   "restrict" "return" "sizeof" "static" "struct" "switch"
   "typedef" "union" "volatile" "while" "_Alignas" "_Alignof"
-  "_Atomic" "_Generic" "_Noreturn" "_Static_assert" "_Thread_local"
+  "_Atomic" "_Generic" "_Noreturn"
 ] @keyword
 
 ["return"] @keyword.return
-["sizeof" "typeof"] @keyword.operator
+["sizeof"] @keyword.operator
 
 ; Strings
 (string_literal) @string
@@ -35,7 +35,7 @@
   "=" "+=" "-=" "*=" "/=" "%="
   "&&" "||" "!" "~" "&" "|" "^" "<<" ">>"
   "&=" "|=" "^=" "<<=" ">>="
-  "->" "." "..." "?:" "?"
+  "->" "." "..." "?"
 ] @operator
 
 ; Punctuation
@@ -56,5 +56,4 @@
 
 ; Preprocessor
 (preproc_include) @keyword.storage
-(preproc_define) @keyword.storage
 (preproc_ifdef) @keyword.storage

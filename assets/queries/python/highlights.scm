@@ -36,7 +36,7 @@
   "==" "!=" "<" ">" "<=" ">="
   "=" "|" "&" "^" "~" "<<" ">>"
   "|=" "&=" "^=" "<<=" ">>="
-  "->" ":=" "..."
+  "->" ":="
 ] @operator
 
 ; Punctuation
@@ -54,7 +54,6 @@
 
 ; Variables
 (identifier) @variable
-(self_parameter) @variable.builtin
 
 ; Parameters
 (parameters (identifier) @variable.parameter)
