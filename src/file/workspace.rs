@@ -96,9 +96,12 @@ impl App {
                     }
                     need_refresh = true;
                 }
-                Some(_) => {
-                    // Open AND dirty — show conflict prompt
-                    if !self.pending_conflict_paths.contains(&path) {
+                Some(idx) => {
+                    // Open AND dirty — only conflict if on-disk content differs from saved snapshot
+                    let on_disk_differs = crate::file::load_document(&path)
+                        .map(|loaded| loaded.document.text() != self.buffers[idx].saved_snapshot)
+                        .unwrap_or(false);
+                    if on_disk_differs && !self.pending_conflict_paths.contains(&path) {
                         self.pending_conflict_paths.push(path);
                     }
                 }
