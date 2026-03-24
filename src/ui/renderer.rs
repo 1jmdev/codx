@@ -546,42 +546,91 @@ fn render_completion_overlay(frame: &mut Frame<'_>, app: &App) {
     if !app.completion_active() {
         return;
     }
-    let popup = centered_rect(frame.area(), 46, 36);
-    let block = Block::default().borders(Borders::ALL).title(" Completion ");
+    let area = frame.area();
+    let Some((_, pane_area, pane)) = app
+        .layout
+        .leaves_in_area(if app.explorer().visible() {
+            Layout::horizontal([Constraint::Length(30), Constraint::Min(1)]).split(area)[1]
+        } else {
+            area
+        })
+        .into_iter()
+        .find(|(pane_id, _, _)| *pane_id == app.active_pane_id())
+    else {
+        return;
+    };
+
+    let max_items = app.lsp.completion.items.len().min(8);
+    let widest = app
+        .lsp
+        .completion
+        .items
+        .iter()
+        .take(max_items)
+        .map(|item| item.label.chars().count() + item.detail.chars().count().min(28) + 3)
+        .max()
+        .unwrap_or(12) as u16;
+    let width = widest.clamp(20, 48).min(area.width.saturating_sub(2));
+    let height = (max_items as u16 + 2).clamp(3, 10);
+
+    let gutter = gutter_width(app.active_document().line_count());
+    let cursor_x = pane_area
+        .x
+        .saturating_add(1)
+        .saturating_add(gutter)
+        .saturating_add(
+            app.active_document()
+                .display_column(pane.cursor())
+                .saturating_sub(pane.viewport().left_column()) as u16,
+        );
+    let cursor_y = pane_area.y.saturating_add(1).saturating_add(
+        pane.cursor()
+            .line
+            .saturating_sub(pane.viewport().top_line()) as u16,
+    );
+
+    let x = cursor_x
+        .saturating_sub(1)
+        .min(area.right().saturating_sub(width));
+    let mut y = cursor_y.saturating_add(1);
+    if y.saturating_add(height) > area.bottom() {
+        y = cursor_y.saturating_sub(height);
+    }
+    let popup = Rect::new(x, y.max(area.y), width, height);
+
+    let block = Block::default().borders(Borders::ALL);
     let inner = block.inner(popup);
-    let rows = Layout::vertical([Constraint::Min(3), Constraint::Length(3)]).split(inner);
     Clear.render(popup, frame.buffer_mut());
     block.render(popup, frame.buffer_mut());
 
+    let palette = Palette::mocha().styles();
     let items = app
         .lsp
         .completion
         .items
         .iter()
+        .take(max_items)
         .enumerate()
         .map(|(index, item)| {
             let style = if index == app.lsp.completion.selected {
-                Palette::mocha().styles().selection
+                palette.selection
             } else {
-                Palette::mocha().styles().editor
+                palette.editor
             };
             let mut text = item.label.clone();
             if !item.detail.is_empty() {
                 text.push_str("  ");
-                text.push_str(&item.detail);
+                let detail = if item.detail.chars().count() > 28 {
+                    item.detail.chars().take(28).collect::<String>()
+                } else {
+                    item.detail.clone()
+                };
+                text.push_str(&detail);
             }
             ListItem::new(Line::from(Span::styled(text, style)))
         })
         .collect::<Vec<_>>();
-    List::new(items).render(rows[0], frame.buffer_mut());
-
-    let doc = app
-        .lsp
-        .completion
-        .selected_item()
-        .map(|it| it.documentation.clone())
-        .unwrap_or_default();
-    Paragraph::new(doc).render(rows[1], frame.buffer_mut());
+    List::new(items).render(inner, frame.buffer_mut());
 }
 
 fn render_hover_overlay(frame: &mut Frame<'_>, app: &App) {

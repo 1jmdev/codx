@@ -19,6 +19,7 @@ pub struct LspWorkspace {
     runtime: Option<Runtime>,
     clients: HashMap<LanguageId, LspClient>,
     servers: HashMap<LanguageId, crate::lsp::client::ServerConfig>,
+    open_versions: HashMap<std::path::PathBuf, i32>,
     diagnostics: DiagnosticStore,
     pub completion: CompletionContext,
     pub hover: HoverView,
@@ -35,6 +36,7 @@ impl LspWorkspace {
             runtime,
             clients: HashMap::new(),
             servers,
+            open_versions: HashMap::new(),
             diagnostics: DiagnosticStore::default(),
             completion: CompletionContext::default(),
             hover: HoverView::default(),
@@ -150,10 +152,11 @@ impl LspWorkspace {
                 "text": text
             }
         });
+        self.open_versions.insert(path.to_path_buf(), 1);
         let _ = runtime.block_on(client.notify("textDocument/didOpen", params));
     }
 
-    pub fn did_change(&mut self, path: &Path, text: &str, version: i32, workspace_root: &Path) {
+    pub fn did_change(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.ensure_client_for_path(path, workspace_root);
         let Some(language) = language_for_path(path) else {
             return;
@@ -164,10 +167,17 @@ impl LspWorkspace {
         let Some(runtime) = self.runtime.as_mut() else {
             return;
         };
+        let version = self
+            .open_versions
+            .get(path)
+            .copied()
+            .unwrap_or(1)
+            .saturating_add(1);
         let params = serde_json::json!({
             "textDocument": { "uri": file_uri(path), "version": version },
             "contentChanges": [ { "text": text } ]
         });
+        self.open_versions.insert(path.to_path_buf(), version);
         let _ = runtime.block_on(client.notify("textDocument/didChange", params));
     }
 

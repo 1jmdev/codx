@@ -161,13 +161,8 @@ impl App {
                 .refresh_for_document(document, cursor_after);
         }
         if let Some(path) = self.active_document().path().map(|path| path.to_path_buf()) {
-            let version = self.active_document().text().len() as i32;
-            self.lsp.did_change(
-                &path,
-                &self.active_document().text(),
-                version,
-                &self.workspace_root,
-            );
+            self.lsp
+                .did_change(&path, &self.active_document().text(), &self.workspace_root);
         }
         self.ensure_cursor_visible();
     }
