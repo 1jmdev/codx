@@ -7,6 +7,7 @@ pub struct SyntaxLayer {
     parser: Parser,
     tree: Option<Tree>,
     dirty: bool,
+    revision: u64,
 }
 
 impl SyntaxLayer {
@@ -21,6 +22,7 @@ impl SyntaxLayer {
             parser,
             tree: None,
             dirty: true,
+            revision: 0,
         }
     }
 
@@ -34,6 +36,7 @@ impl SyntaxLayer {
             Some(tree) => {
                 self.tree = Some(tree);
                 self.dirty = false;
+                self.revision = self.revision.saturating_add(1);
                 Ok(())
             }
             None => Err(SyntaxError::ParseFailed),
@@ -60,6 +63,7 @@ impl SyntaxLayer {
             });
         }
         self.dirty = true;
+        self.revision = self.revision.saturating_add(1);
     }
 
     pub fn set_language_id(&mut self, language_id: Option<LanguageId>) -> Result<(), SyntaxError> {
@@ -75,6 +79,7 @@ impl SyntaxLayer {
         } else {
             self.dirty = false;
         }
+        self.revision = self.revision.saturating_add(1);
 
         Ok(())
     }
@@ -93,5 +98,9 @@ impl SyntaxLayer {
 
     pub fn language_id(&self) -> Option<LanguageId> {
         self.language_id
+    }
+
+    pub fn revision(&self) -> u64 {
+        self.revision
     }
 }

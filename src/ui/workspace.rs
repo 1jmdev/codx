@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::path::Path;
 
 use crate::app::{App, FocusTarget};
@@ -138,6 +139,8 @@ impl App {
             saved_snapshot,
             encoding,
             syntax,
+            line_highlight_cache: RefCell::new(crate::app::LineHighlightCache::default()),
+            fold_cache: RefCell::new(crate::app::FoldCache::default()),
         });
         buffer_id
     }

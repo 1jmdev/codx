@@ -1,10 +1,12 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::config::Theme;
 use crate::core::{Document, History};
 use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles};
 use crate::syntax::{
-    markdown_code_block_spans_for_line, spans_for_line, HighlightSpan, LanguageId,
+    compute_folds, markdown_code_block_spans_for_line, spans_for_line, HighlightSpan, LanguageId,
     LanguageRegistry, SyntaxLayer,
 };
 use crate::ui::{LayoutState, PickerState};
@@ -61,6 +63,20 @@ pub struct BufferState {
     pub saved_snapshot: String,
     pub encoding: DetectedEncoding,
     pub syntax: SyntaxLayer,
+    pub line_highlight_cache: RefCell<LineHighlightCache>,
+    pub fold_cache: RefCell<FoldCache>,
+}
+
+#[derive(Default)]
+pub struct LineHighlightCache {
+    revision: u64,
+    lines: HashMap<usize, Vec<HighlightSpan>>,
+}
+
+#[derive(Default)]
+pub struct FoldCache {
+    revision: u64,
+    folds: Vec<crate::syntax::FoldRange>,
 }
 
 pub struct App {
@@ -206,6 +222,18 @@ impl App {
         let Some(buffer) = self.buffer_by_id(buffer_id) else {
             return Vec::new();
         };
+        let revision = buffer.syntax.revision();
+        {
+            let mut cache = buffer.line_highlight_cache.borrow_mut();
+            if cache.revision != revision {
+                cache.revision = revision;
+                cache.lines.clear();
+            }
+            if let Some(cached) = cache.lines.get(&line_index) {
+                return cached.clone();
+            }
+        }
+
         let Some(tree) = buffer.syntax.tree() else {
             return Vec::new();
         };
@@ -235,7 +263,27 @@ impl App {
                 line_end,
             ));
         }
+
+        let mut cache = buffer.line_highlight_cache.borrow_mut();
+        cache.lines.insert(line_index, spans.clone());
         spans
+    }
+
+    pub fn fold_ranges_for_buffer(&self, buffer_id: u64) -> Vec<crate::syntax::FoldRange> {
+        let Some(buffer) = self.buffer_by_id(buffer_id) else {
+            return Vec::new();
+        };
+        let Some(tree) = buffer.syntax.tree() else {
+            return Vec::new();
+        };
+
+        let revision = buffer.syntax.revision();
+        let mut cache = buffer.fold_cache.borrow_mut();
+        if cache.revision != revision {
+            cache.revision = revision;
+            cache.folds = compute_folds(tree);
+        }
+        cache.folds.clone()
     }
 
     pub fn switch_theme(&mut self, name: &str) -> bool {

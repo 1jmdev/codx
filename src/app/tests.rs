@@ -11,7 +11,10 @@ mod tests {
     #[test]
     fn dirty_document_requires_confirmation() {
         let mut app = App::open(None).unwrap_or_else(|error| panic!("{error}"));
-        app.set_terminal_size(Size { width: 120, height: 30 });
+        app.set_terminal_size(Size {
+            width: 120,
+            height: 30,
+        });
         app.handle_key_event(KeyEvent::from(KeyCode::Char('a')))
             .unwrap_or_else(|error| panic!("{error}"));
         app.handle_key_event(KeyEvent::new(KeyCode::Char('q'), KeyModifiers::CONTROL))

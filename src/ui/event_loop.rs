@@ -25,17 +25,25 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
         }
 
         if event::poll(Duration::from_millis(250))? {
-            match event::read()? {
-                Event::Key(key_event)
-                    if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) =>
-                {
-                    app.handle_key_event(key_event)?;
+            let mut processed = 0usize;
+            loop {
+                match event::read()? {
+                    Event::Key(key_event)
+                        if matches!(key_event.kind, KeyEventKind::Press | KeyEventKind::Repeat) =>
+                    {
+                        app.handle_key_event(key_event)?;
+                    }
+                    Event::Resize(width, height) => {
+                        app.set_terminal_size(Size::new(width, height));
+                        app.ensure_cursor_visible();
+                    }
+                    _ => {}
                 }
-                Event::Resize(width, height) => {
-                    app.set_terminal_size(Size::new(width, height));
-                    app.ensure_cursor_visible();
+
+                processed += 1;
+                if processed >= 128 || !event::poll(Duration::from_millis(0))? {
+                    break;
                 }
-                _ => {}
             }
         }
     }

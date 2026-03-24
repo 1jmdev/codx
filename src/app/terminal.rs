@@ -21,10 +21,7 @@ impl TerminalSession {
             .terminal
             .backend_mut()
             .execute(crossterm::terminal::SetTitle("codx"))?;
-        session
-            .terminal
-            .backend_mut()
-            .execute(EnableMouseCapture)?;
+        session.terminal.backend_mut().execute(EnableMouseCapture)?;
         session.terminal.clear()?;
         Ok(session)
     }

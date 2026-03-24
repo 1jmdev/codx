@@ -8,7 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::{App, AppMode, FocusTarget, MessageKind};
-use crate::syntax::{FoldRange, HighlightSpan, compute_folds};
+use crate::syntax::HighlightSpan;
 use crate::ui::Palette;
 use crate::view::build_statusline;
 
@@ -96,7 +96,11 @@ fn render_explorer(buffer: &mut Buffer, area: Rect, app: &App) {
             let indent = "  ".repeat(entry.depth);
             let is_expanded = entry.is_dir && app.explorer().is_expanded(&entry.path);
             let icon = if entry.is_dir {
-                if is_expanded { "\u{f07c} " } else { "\u{f07b} " }
+                if is_expanded {
+                    "\u{f07c} "
+                } else {
+                    "\u{f07b} "
+                }
             } else {
                 "\u{f15b} "
             };
@@ -127,13 +131,7 @@ fn render_explorer(buffer: &mut Buffer, area: Rect, app: &App) {
     List::new(items).render(inner, buffer);
 }
 
-fn render_buffer_view(
-    buffer: &mut Buffer,
-    area: Rect,
-    app: &App,
-    buffer_id: u64,
-    pane_id: u64,
-) {
+fn render_buffer_view(buffer: &mut Buffer, area: Rect, app: &App, buffer_id: u64, pane_id: u64) {
     let palette = Palette::mocha().styles();
     let Some(buffer_state) = app.buffer_by_id(buffer_id) else {
         return;
@@ -142,11 +140,7 @@ fn render_buffer_view(
         return;
     };
 
-    let folds: Vec<FoldRange> = buffer_state
-        .syntax
-        .tree()
-        .map(|t| compute_folds(t))
-        .unwrap_or_default();
+    let folds = app.fold_ranges_for_buffer(buffer_id);
 
     let gutter_width =
         gutter_width(buffer_state.document.line_count()).min(area.width.saturating_sub(1));
@@ -159,7 +153,9 @@ fn render_buffer_view(
 
     for row in 0..area.height as usize {
         let line_index = pane.viewport().top_line() + row;
-        let is_foldable = folds.iter().any(|f| f.start_line == line_index && f.end_line > line_index);
+        let is_foldable = folds
+            .iter()
+            .any(|f| f.start_line == line_index && f.end_line > line_index);
         let line_number = if line_index < buffer_state.document.line_count() {
             if is_foldable {
                 format!("{:>3}\u{25be} ", line_index + 1)
@@ -190,15 +186,31 @@ fn render_buffer_view(
 
     let theme = app.active_theme();
     let editor_style = Style::default()
-        .fg(Color::Rgb(theme.foreground.r, theme.foreground.g, theme.foreground.b))
-        .bg(Color::Rgb(theme.background.r, theme.background.g, theme.background.b));
+        .fg(Color::Rgb(
+            theme.foreground.r,
+            theme.foreground.g,
+            theme.foreground.b,
+        ))
+        .bg(Color::Rgb(
+            theme.background.r,
+            theme.background.g,
+            theme.background.b,
+        ));
 
     let mut lines = Vec::with_capacity(area.height as usize);
     for row in 0..text_area.height as usize {
         let line_index = pane.viewport().top_line() + row;
-        lines.push(render_text_line(app, buffer_id, pane_id, line_index, text_area.width as usize));
+        lines.push(render_text_line(
+            app,
+            buffer_id,
+            pane_id,
+            line_index,
+            text_area.width as usize,
+        ));
     }
-    Paragraph::new(lines).style(editor_style).render(text_area, buffer);
+    Paragraph::new(lines)
+        .style(editor_style)
+        .render(text_area, buffer);
 }
 
 fn render_text_line(
@@ -223,8 +235,11 @@ fn render_text_line(
     let raw_line = buffer_state.document.line_text(line_index);
     let syntax_spans = app.syntax_spans_for_line(buffer_id, line_index);
     let theme = app.active_theme();
-    let plain_style = Style::default()
-        .fg(Color::Rgb(theme.foreground.r, theme.foreground.g, theme.foreground.b));
+    let plain_style = Style::default().fg(Color::Rgb(
+        theme.foreground.r,
+        theme.foreground.g,
+        theme.foreground.b,
+    ));
 
     let mut spans = Vec::new();
     let mut display_column = 0usize;
@@ -266,7 +281,10 @@ fn render_text_line(
         byte_offset += grapheme_bytes;
     }
 
-    if pane.selection().starts_at(line_index, raw_line.chars().count()) {
+    if pane
+        .selection()
+        .starts_at(line_index, raw_line.chars().count())
+    {
         spans.push(Span::styled(" ", palette.selection));
     }
 
@@ -304,7 +322,6 @@ fn find_span_style(
     }
     Some(style)
 }
-
 
 fn render_statusline(buffer: &mut Buffer, area: Rect, app: &App) {
     let palette = Palette::mocha().styles();
@@ -352,10 +369,14 @@ fn render_delete_confirm_overlay(frame: &mut Frame<'_>, app: &App) {
     let palette = Palette::mocha();
 
     // All styles here are fg-only so they sit cleanly on the popup background
-    let blue   = Style::default().fg(palette.blue);
-    let bold_blue = Style::default().fg(palette.blue).add_modifier(Modifier::BOLD);
-    let bold_fg = Style::default().fg(palette.text).add_modifier(Modifier::BOLD);
-    let dim    = Style::default().fg(palette.subtle);
+    let blue = Style::default().fg(palette.blue);
+    let bold_blue = Style::default()
+        .fg(palette.blue)
+        .add_modifier(Modifier::BOLD);
+    let bold_fg = Style::default()
+        .fg(palette.text)
+        .add_modifier(Modifier::BOLD);
+    let dim = Style::default().fg(palette.subtle);
     let border = Style::default().bg(palette.mantle).fg(palette.blue);
 
     let entry_name = app
@@ -409,9 +430,15 @@ fn render_external_change_conflict_overlay(frame: &mut Frame<'_>, app: &App) {
     }
 
     let palette = Palette::mocha();
-    let bold_blue = Style::default().fg(palette.blue).add_modifier(Modifier::BOLD);
-    let bold_yellow = Style::default().fg(palette.yellow).add_modifier(Modifier::BOLD);
-    let bold_fg = Style::default().fg(palette.text).add_modifier(Modifier::BOLD);
+    let bold_blue = Style::default()
+        .fg(palette.blue)
+        .add_modifier(Modifier::BOLD);
+    let bold_yellow = Style::default()
+        .fg(palette.yellow)
+        .add_modifier(Modifier::BOLD);
+    let bold_fg = Style::default()
+        .fg(palette.text)
+        .add_modifier(Modifier::BOLD);
     let dim = Style::default().fg(palette.subtle);
     let border = Style::default().bg(palette.mantle).fg(palette.yellow);
 
@@ -514,7 +541,12 @@ fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {
 fn screen_cursor_position(app: &App, editor_area: Rect, message_area: Rect) -> (u16, u16) {
     if app.picker().is_some() {
         let popup = centered_rect(editor_area, 70, 60);
-        let x = popup.x.saturating_add(1 + app.picker().map(|picker| picker.query().chars().count() as u16).unwrap_or(0));
+        let x = popup.x.saturating_add(
+            1 + app
+                .picker()
+                .map(|picker| picker.query().chars().count() as u16)
+                .unwrap_or(0),
+        );
         return (x, popup.y.saturating_add(1));
     }
 
@@ -549,10 +581,11 @@ fn screen_cursor_position(app: &App, editor_area: Rect, message_area: Rect) -> (
                 .display_column(pane.cursor())
                 .saturating_sub(pane.viewport().left_column()) as u16,
         );
-    let y = area
-        .y
-        .saturating_add(1)
-        .saturating_add(pane.cursor().line.saturating_sub(pane.viewport().top_line()) as u16);
+    let y = area.y.saturating_add(1).saturating_add(
+        pane.cursor()
+            .line
+            .saturating_sub(pane.viewport().top_line()) as u16,
+    );
     (x, y)
 }
 

@@ -4,6 +4,7 @@ use crate::app::{App, AppError, AppMode, BufferState, FocusTarget, MessageKind, 
 use crate::file::{load_document, ExplorerState, FileFinder, FileWatcher, RecentFiles};
 use crate::syntax::{language_for_path, SyntaxLayer};
 use crate::util::{Clipboard, DetectedEncoding};
+use std::cell::RefCell;
 
 pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
     let workspace_root = resolve_workspace_root(path.as_deref());
@@ -37,6 +38,8 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
         saved_snapshot,
         encoding,
         syntax,
+        line_highlight_cache: RefCell::new(crate::app::LineHighlightCache::default()),
+        fold_cache: RefCell::new(crate::app::FoldCache::default()),
     };
 
     let active_theme = Theme::default_theme();
