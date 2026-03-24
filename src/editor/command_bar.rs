@@ -128,7 +128,6 @@ impl App {
             "buffers" => self.open_buffer_picker(),
             "split" => self.split_focused(crate::ui::SplitDirection::Vertical),
             "vsplit" => self.split_focused(crate::ui::SplitDirection::Horizontal),
-            "reload" => self.reload_changed_files()?,
             _ if command.starts_with("find ") => {
                 let query = command.trim_start_matches("find ").to_owned();
                 self.command_bar.input = query.clone();

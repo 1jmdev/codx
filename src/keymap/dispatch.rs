@@ -33,7 +33,6 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
         KeyCode::Char('q') if control => Some(Command::Quit),
         KeyCode::Char('z') if control => Some(Command::Undo),
         KeyCode::Char('y') if control => Some(Command::Redo),
-        KeyCode::Char('r') if control => Some(Command::ReloadChangedFiles),
         KeyCode::Char('f') if control => Some(Command::OpenSearch),
         KeyCode::Char('b') if control => Some(Command::ToggleExplorer),
         KeyCode::Char('p') if control => Some(Command::OpenFilePicker),

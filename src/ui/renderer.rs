@@ -24,6 +24,7 @@ pub fn render(frame: &mut Frame<'_>, app: &App) {
     render_message_or_command_bar(frame.buffer_mut(), areas[2], app);
     render_picker_overlay(frame, app);
     render_delete_confirm_overlay(frame, app);
+    render_external_change_conflict_overlay(frame, app);
 
     let cursor = screen_cursor_position(app, areas[0], areas[2]);
     frame.set_cursor_position(cursor);
@@ -353,6 +354,69 @@ fn render_delete_confirm_overlay(frame: &mut Frame<'_>, app: &App) {
         Span::styled(" cancel", dim),
     ]))
     .render(areas[2], frame.buffer_mut());
+}
+
+fn render_external_change_conflict_overlay(frame: &mut Frame<'_>, app: &App) {
+    if !matches!(app.mode(), AppMode::ExternalChangeConflict) {
+        return;
+    }
+
+    let palette = Palette::mocha();
+    let bold_blue = Style::default().fg(palette.blue).add_modifier(Modifier::BOLD);
+    let bold_yellow = Style::default().fg(palette.yellow).add_modifier(Modifier::BOLD);
+    let bold_fg = Style::default().fg(palette.text).add_modifier(Modifier::BOLD);
+    let dim = Style::default().fg(palette.subtle);
+    let border = Style::default().bg(palette.mantle).fg(palette.yellow);
+
+    let file_name = app
+        .current_conflict_path()
+        .and_then(|p| p.file_name())
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| String::from("unknown file"));
+
+    let popup = centered_rect(frame.area(), 44, 22);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(border)
+        .style(Style::default().bg(palette.mantle))
+        .title(Span::styled(" \u{f071} File Changed on Disk ", bold_yellow));
+    let inner = block.inner(popup);
+    let areas = Layout::vertical([
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Length(1),
+    ])
+    .split(inner);
+
+    Clear.render(popup, frame.buffer_mut());
+    block.render(popup, frame.buffer_mut());
+
+    Paragraph::new(Line::from(vec![
+        Span::styled("\u{f15b} ", bold_yellow),
+        Span::styled(file_name, bold_fg),
+    ]))
+    .render(areas[0], frame.buffer_mut());
+
+    Paragraph::new(Line::from(Span::styled(
+        "was modified outside the editor.",
+        dim,
+    )))
+    .render(areas[1], frame.buffer_mut());
+
+    Paragraph::new(Line::from(Span::styled(
+        "You have unsaved changes in this buffer.",
+        dim,
+    )))
+    .render(areas[2], frame.buffer_mut());
+
+    Paragraph::new(Line::from(vec![
+        Span::styled("y", bold_blue),
+        Span::styled(" reload from disk  ", dim),
+        Span::styled("n/Esc", bold_blue),
+        Span::styled(" keep my changes", dim),
+    ]))
+    .render(areas[3], frame.buffer_mut());
 }
 
 fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {

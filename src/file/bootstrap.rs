@@ -37,7 +37,7 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
         file_finder: FileFinder::new(workspace_root),
         recent_files,
         watcher,
-        pending_reload_paths: Vec::new(),
+        pending_conflict_paths: Vec::new(),
         buffers: vec![initial_buffer],
         picker: None,
         clipboard,

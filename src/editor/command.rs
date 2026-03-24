@@ -36,5 +36,4 @@ pub enum Command {
     FocusNextPane,
     ResizePaneLeft,
     ResizePaneRight,
-    ReloadChangedFiles,
 }

@@ -65,45 +65,56 @@ impl App {
     }
 
     pub(crate) fn poll_background_tasks(&mut self) {
-        if let Some(watcher) = self.watcher.as_mut() {
-            let watched = watcher.poll_paths();
-            if watched.is_empty() {
-                return;
-            }
-
-            self.pending_reload_paths.extend(watched);
-            self.pending_reload_paths.sort();
-            self.pending_reload_paths.dedup();
-            self.set_message(
-                "External file changes detected. Press Ctrl-R to reload clean buffers.",
-                MessageKind::Warning,
-            );
+        let watched = match self.watcher.as_mut() {
+            Some(watcher) => watcher.poll_paths(),
+            None => return,
+        };
+        if watched.is_empty() {
+            return;
         }
-    }
 
-    pub(crate) fn reload_changed_files(&mut self) -> Result<(), AppError> {
-        let pending = std::mem::take(&mut self.pending_reload_paths);
-        for path in pending {
-            let Some(buffer_index) = self
+        let mut need_refresh = false;
+
+        for path in watched {
+            let buffer_index = self
                 .buffers
                 .iter()
-                .position(|buffer| buffer.document.path().is_some_and(|item| item == path))
-            else {
-                continue;
-            };
+                .position(|b| b.document.path().is_some_and(|p| p == path));
 
-            if self.buffers[buffer_index].document.is_dirty() {
-                continue;
+            match buffer_index {
+                None => {
+                    // Not open — refresh explorer/finder silently
+                    need_refresh = true;
+                }
+                Some(idx) if !self.buffers[idx].document.is_dirty() => {
+                    // Open but clean — silently reload
+                    if let Ok(loaded) = crate::file::load_document(&path) {
+                        self.buffers[idx].document = loaded.document;
+                        self.buffers[idx].encoding = loaded.encoding;
+                        self.buffers[idx].saved_snapshot =
+                            self.buffers[idx].document.text();
+                    }
+                    need_refresh = true;
+                }
+                Some(_) => {
+                    // Open AND dirty — show conflict prompt
+                    if !self.pending_conflict_paths.contains(&path) {
+                        self.pending_conflict_paths.push(path);
+                    }
+                }
             }
-
-            let loaded = crate::file::load_document(&path)?;
-            self.buffers[buffer_index].document = loaded.document;
-            self.buffers[buffer_index].encoding = loaded.encoding;
-            self.buffers[buffer_index].saved_snapshot = self.buffers[buffer_index].document.text();
         }
 
-        self.set_message("Reloaded externally changed buffers", MessageKind::Info);
-        Ok(())
+        if need_refresh {
+            self.explorer.refresh();
+            self.file_finder.refresh();
+        }
+
+        if !self.pending_conflict_paths.is_empty()
+            && matches!(self.mode, AppMode::Editing)
+        {
+            self.mode = AppMode::ExternalChangeConflict;
+        }
     }
 
     pub(crate) fn toggle_explorer(&mut self) {

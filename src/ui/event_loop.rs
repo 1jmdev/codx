@@ -41,7 +41,12 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
 
 impl App {
     pub(crate) fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
-        if !matches!(self.mode, AppMode::ConfirmQuit | AppMode::ConfirmDeleteExplorerEntry) {
+        if !matches!(
+            self.mode,
+            AppMode::ConfirmQuit
+                | AppMode::ConfirmDeleteExplorerEntry
+                | AppMode::ExternalChangeConflict
+        ) {
             self.clear_message();
         }
 
@@ -52,6 +57,7 @@ impl App {
         match self.mode {
             AppMode::ConfirmQuit => self.handle_confirm_quit_key(key_event),
             AppMode::ConfirmDeleteExplorerEntry => self.handle_confirm_delete_explorer_key(key_event),
+            AppMode::ExternalChangeConflict => self.handle_external_change_conflict_key(key_event),
             AppMode::CommandBar(mode) => self.handle_command_bar_key(mode, key_event),
             AppMode::Editing => {
                 if self.focus == FocusTarget::Explorer && self.explorer.visible() {
@@ -103,6 +109,42 @@ impl App {
             KeyCode::Char('d') => {
                 if self.explorer.selected_entry().is_some() {
                     self.mode = AppMode::ConfirmDeleteExplorerEntry;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_external_change_conflict_key(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
+        match key_event.code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                // Discard editor changes and reload from disk
+                if let Some(path) = self.pending_conflict_paths.first().cloned() {
+                    if let Ok(loaded) = crate::file::load_document(&path) {
+                        if let Some(buf) = self
+                            .buffers
+                            .iter_mut()
+                            .find(|b| b.document.path().is_some_and(|p| p == path))
+                        {
+                            buf.document = loaded.document;
+                            buf.encoding = loaded.encoding;
+                            buf.saved_snapshot = buf.document.text();
+                        }
+                    }
+                    self.pending_conflict_paths.remove(0);
+                }
+                if self.pending_conflict_paths.is_empty() {
+                    self.mode = AppMode::Editing;
+                }
+            }
+            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                // Keep editor changes, dismiss this conflict
+                if !self.pending_conflict_paths.is_empty() {
+                    self.pending_conflict_paths.remove(0);
+                }
+                if self.pending_conflict_paths.is_empty() {
+                    self.mode = AppMode::Editing;
                 }
             }
             _ => {}
@@ -239,7 +281,6 @@ impl App {
             Command::FocusNextPane => self.focus_next_pane(),
             Command::ResizePaneLeft => self.resize_focused_pane(-5),
             Command::ResizePaneRight => self.resize_focused_pane(5),
-            Command::ReloadChangedFiles => self.reload_changed_files()?,
         }
 
         self.ensure_cursor_visible();

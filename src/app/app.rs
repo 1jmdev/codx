@@ -10,6 +10,7 @@ pub enum AppMode {
     Editing,
     ConfirmQuit,
     ConfirmDeleteExplorerEntry,
+    ExternalChangeConflict,
     CommandBar(CommandBarMode),
 }
 
@@ -68,7 +69,7 @@ pub struct App {
     pub(crate) recent_files: RecentFiles,
     pub(crate) watcher: Option<FileWatcher>,
     pub(crate) picker: Option<PickerState>,
-    pub(crate) pending_reload_paths: Vec<PathBuf>,
+    pub(crate) pending_conflict_paths: Vec<PathBuf>,
     pub(crate) clipboard: Option<Clipboard>,
     pub(crate) focus: FocusTarget,
     pub(crate) mode: AppMode,
@@ -148,6 +149,10 @@ impl App {
 
     pub fn focus(&self) -> FocusTarget {
         self.focus
+    }
+
+    pub fn current_conflict_path(&self) -> Option<&std::path::Path> {
+        self.pending_conflict_paths.first().map(|p| p.as_path())
     }
 
     pub(crate) fn buffer_by_id(&self, buffer_id: u64) -> Option<&BufferState> {
