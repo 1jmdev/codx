@@ -46,6 +46,11 @@ impl Buffer {
         self.rope.line_to_char(clamped)
     }
 
+    pub fn line_to_byte(&self, line: usize) -> usize {
+        let clamped = line.min(self.line_count().saturating_sub(1));
+        self.rope.line_to_byte(clamped)
+    }
+
     pub fn cursor_to_char(&self, cursor: Cursor) -> usize {
         let line = cursor.line.min(self.line_count().saturating_sub(1));
         let line_start = self.line_to_char(line);

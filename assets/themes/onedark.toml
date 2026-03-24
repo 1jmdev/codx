@@ -1,0 +1,43 @@
+name = "One Dark"
+
+[palette]
+background = "#282c34"
+foreground = "#abb2bf"
+
+[highlights]
+"comment" = { fg = "#5c6370", italic = true }
+"comment.doc" = { fg = "#5c6370", italic = true }
+"keyword" = { fg = "#c678dd" }
+"keyword.function" = { fg = "#c678dd" }
+"keyword.storage" = { fg = "#c678dd" }
+"keyword.type" = { fg = "#c678dd" }
+"keyword.operator" = { fg = "#56b6c2" }
+"keyword.return" = { fg = "#c678dd" }
+"keyword.control" = { fg = "#c678dd" }
+"string" = { fg = "#98c379" }
+"string.escape" = { fg = "#56b6c2" }
+"number" = { fg = "#d19a66" }
+"float" = { fg = "#d19a66" }
+"boolean" = { fg = "#d19a66" }
+"operator" = { fg = "#56b6c2" }
+"punctuation" = { fg = "#abb2bf" }
+"punctuation.delimiter" = { fg = "#abb2bf" }
+"punctuation.bracket" = { fg = "#abb2bf" }
+"function" = { fg = "#61afef" }
+"function.method" = { fg = "#61afef" }
+"function.builtin" = { fg = "#56b6c2", bold = true }
+"function.macro" = { fg = "#c678dd" }
+"type" = { fg = "#e5c07b" }
+"type.builtin" = { fg = "#e5c07b", bold = true }
+"variable" = { fg = "#abb2bf" }
+"variable.parameter" = { fg = "#e06c75" }
+"variable.builtin" = { fg = "#e06c75" }
+"constant" = { fg = "#d19a66" }
+"constant.builtin" = { fg = "#d19a66", bold = true }
+"attribute" = { fg = "#e06c75" }
+"property" = { fg = "#56b6c2" }
+"namespace" = { fg = "#e06c75" }
+"escape" = { fg = "#56b6c2" }
+"label" = { fg = "#61afef" }
+"special" = { fg = "#c678dd" }
+"error" = { fg = "#e06c75" }

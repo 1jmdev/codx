@@ -7,6 +7,7 @@ mod tests;
 pub use app::App;
 pub use app::AppMode;
 pub(crate) use app::BufferState;
+pub use crate::config::Theme;
 #[allow(unused_imports)]
 pub use app::CommandBarMode;
 pub use app::FocusTarget;

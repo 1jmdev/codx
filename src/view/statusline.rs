@@ -14,8 +14,9 @@ pub fn build_statusline(app: &App) -> String {
     let total_lines = app.active_document().line_count();
     let pane_count = app.layout.pane_ids().len();
     let encoding = app.active_buffer().encoding.label();
+    let theme_name = app.active_theme_name();
 
     format!(
-        "{file_name}{dirty}{read_only}  Ln {line}, Col {column}  {total_lines} lines  {encoding}  {pane_count} pane(s)"
+        "{file_name}{dirty}{read_only}  Ln {line}, Col {column}  {total_lines} lines  {encoding}  {theme_name}  {pane_count} pane(s)"
     )
 }

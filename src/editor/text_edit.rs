@@ -1,5 +1,6 @@
 use crate::app::App;
 use crate::core::{Cursor, EditRecord, Selection};
+use crate::syntax::compute_indent;
 
 impl App {
     pub(crate) fn insert_text(&mut self, text: &str, allow_coalesce: bool) {
@@ -113,6 +114,7 @@ impl App {
                 coalesce,
             );
             buffer.document.set_dirty(buffer.document.text() != buffer.saved_snapshot);
+            buffer.syntax.mark_dirty();
             (cursor_after, &buffer.document as *const _)
         };
 
@@ -130,5 +132,62 @@ impl App {
             .selection()
             .normalized()
             .unwrap_or((self.active_pane().cursor(), self.active_pane().cursor()))
+    }
+
+    pub(crate) fn insert_newline_with_indent(&mut self) {
+        let cursor = self.active_pane().cursor();
+        let buffer_id = self.active_buffer_id;
+
+        let (current_indent, cursor_byte, tree_ref, next_char) = {
+            let Some(buffer) = self.buffer_by_id(buffer_id) else {
+                self.insert_text("\n", false);
+                return;
+            };
+
+            let raw_line = buffer.document.raw_line_text(cursor.line);
+            let leading: String = raw_line.chars().take_while(|c| *c == ' ' || *c == '\t').collect();
+
+            let line_start_byte = buffer.document.line_to_byte(cursor.line);
+            let line_chars: String = raw_line.chars().take(cursor.column).collect();
+            let col_byte: usize = line_chars.len();
+            let cb = line_start_byte + col_byte;
+
+            let tree_ptr = buffer.syntax.tree().map(|t| t as *const _);
+            let next = if cursor.column < buffer.document.line_text(cursor.line).chars().count() {
+                buffer.document.raw_line_text(cursor.line)
+                    .chars()
+                    .nth(cursor.column)
+            } else {
+                None
+            };
+
+            (leading, cb, tree_ptr, next)
+        };
+
+        let new_indent = {
+            let buffer = self.buffer_by_id(buffer_id);
+            let source = buffer.map(|b| b.document.text()).unwrap_or_default();
+            let tree = tree_ref.map(|ptr| unsafe { &*ptr });
+            compute_indent(tree, source.as_bytes(), cursor_byte, &current_indent)
+        };
+
+        let is_closing = next_char.map(|c| matches!(c, '}' | ')' | ']')).unwrap_or(false);
+
+        if is_closing {
+            let insert = format!("\n{}\n{}", new_indent, current_indent);
+            self.insert_text(&insert, false);
+            let new_cursor = self.active_pane().cursor();
+            let target_line = new_cursor.line - 1;
+            let col = new_indent.chars().count();
+            let c = Cursor::new(target_line, col);
+            if let Some(pane) = self.layout.pane_mut(self.active_pane_id()) {
+                pane.set_cursor(c);
+                pane.set_selection(crate::core::Selection::caret(c));
+            }
+            self.ensure_cursor_visible();
+        } else {
+            let insert = format!("\n{}", new_indent);
+            self.insert_text(&insert, false);
+        }
     }
 }

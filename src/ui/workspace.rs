@@ -2,6 +2,7 @@ use std::path::Path;
 
 use crate::app::{App, FocusTarget};
 use crate::core::{Document, History};
+use crate::syntax::{SyntaxLayer, language_for_path};
 use crate::ui::{PickerItem, PickerKind, PickerState, SplitDirection};
 use crate::util::DetectedEncoding;
 
@@ -126,12 +127,16 @@ impl App {
     ) -> u64 {
         let buffer_id = self.next_buffer_id;
         self.next_buffer_id += 1;
+        let language_id = document.path().and_then(language_for_path);
+        let mut syntax = SyntaxLayer::new(language_id);
+        let _ = syntax.reparse(saved_snapshot.as_bytes());
         self.buffers.push(crate::app::BufferState {
             id: buffer_id,
             document,
             history,
             saved_snapshot,
             encoding,
+            syntax,
         });
         buffer_id
     }

@@ -1,0 +1,59 @@
+[rust]
+name = "Rust"
+extensions = ["rs"]
+
+[javascript]
+name = "JavaScript"
+extensions = ["js", "mjs", "cjs"]
+
+[typescript]
+name = "TypeScript"
+extensions = ["ts", "mts", "cts"]
+
+[python]
+name = "Python"
+extensions = ["py", "pyi", "pyw"]
+
+[go]
+name = "Go"
+extensions = ["go"]
+
+[c]
+name = "C"
+extensions = ["c", "h"]
+
+[cpp]
+name = "C++"
+extensions = ["cpp", "cxx", "cc", "hpp", "hxx", "hh"]
+
+[html]
+name = "HTML"
+extensions = ["html", "htm"]
+
+[css]
+name = "CSS"
+extensions = ["css"]
+
+[json]
+name = "JSON"
+extensions = ["json", "jsonc"]
+
+[toml]
+name = "TOML"
+extensions = ["toml"]
+
+[yaml]
+name = "YAML"
+extensions = ["yaml", "yml"]
+
+[bash]
+name = "Bash"
+extensions = ["sh", "bash", "zsh"]
+
+[lua]
+name = "Lua"
+extensions = ["lua"]
+
+[markdown]
+name = "Markdown"
+extensions = ["md", "markdown"]

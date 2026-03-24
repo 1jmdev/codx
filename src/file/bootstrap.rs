@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use crate::app::{App, AppError, AppMode, BufferState, FocusTarget, MessageKind};
+use crate::app::{App, AppError, AppMode, BufferState, FocusTarget, MessageKind, Theme};
 use crate::file::{load_document, ExplorerState, FileFinder, FileWatcher, RecentFiles};
+use crate::syntax::{SyntaxLayer, language_for_path};
 use crate::util::{Clipboard, DetectedEncoding};
 
 pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
@@ -20,13 +21,20 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
     };
 
     let saved_snapshot = document.text();
+    let language_id = document.path().and_then(language_for_path);
+    let mut syntax = SyntaxLayer::new(language_id);
+    let _ = syntax.reparse(saved_snapshot.as_bytes());
+
     let initial_buffer = BufferState {
         id: 1,
         document,
         history: crate::core::History::default(),
         saved_snapshot,
         encoding,
+        syntax,
     };
+
+    let active_theme = Theme::default_theme();
 
     let mut app = App {
         workspace_root: workspace_root.clone(),
@@ -47,6 +55,7 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
         pending_quit_after_save: false,
         message: None,
         command_bar: crate::app::CommandBarState::default(),
+        active_theme,
     };
 
     if let Some(path) = app.active_document().path().map(Path::to_path_buf) {

@@ -16,6 +16,7 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
 
     loop {
         app.poll_background_tasks();
+        app.update_dirty_syntax_layers();
         terminal.draw(|frame| crate::ui::render(frame, app))?;
 
         if app.should_quit {
@@ -79,7 +80,7 @@ impl App {
             KeyCode::Char(ch) if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.insert_text(&ch.to_string(), true);
             }
-            KeyCode::Enter => self.insert_text("\n", false),
+            KeyCode::Enter => self.insert_newline_with_indent(),
             KeyCode::Tab => self.insert_text("    ", false),
             KeyCode::Backspace => self.backspace(),
             KeyCode::Delete => self.delete_forward(),

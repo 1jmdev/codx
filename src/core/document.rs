@@ -54,6 +54,10 @@ impl Document {
         self.buffer.line_count()
     }
 
+    pub fn line_to_byte(&self, line: usize) -> usize {
+        self.buffer.line_to_byte(line)
+    }
+
     pub fn last_line_index(&self) -> usize {
         self.line_count().saturating_sub(1)
     }

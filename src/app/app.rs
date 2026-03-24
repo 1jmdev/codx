@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 
+use crate::config::Theme;
 use crate::core::{Document, History};
 use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles};
+use crate::syntax::{HighlightSpan, LanguageRegistry, SyntaxLayer, spans_for_line};
 use crate::ui::{LayoutState, PickerState};
 use crate::util::{Clipboard, DetectedEncoding};
 
@@ -49,13 +51,13 @@ pub(crate) struct Message {
     pub(crate) kind: MessageKind,
 }
 
-#[derive(Debug)]
 pub struct BufferState {
     pub id: u64,
     pub document: Document,
     pub history: History,
     pub saved_snapshot: String,
     pub encoding: DetectedEncoding,
+    pub syntax: SyntaxLayer,
 }
 
 pub struct App {
@@ -77,6 +79,7 @@ pub struct App {
     pub(crate) pending_quit_after_save: bool,
     pub(crate) message: Option<Message>,
     pub(crate) command_bar: CommandBarState,
+    pub(crate) active_theme: Theme,
 }
 
 impl App {
@@ -161,6 +164,60 @@ impl App {
 
     pub(crate) fn buffer_by_id_mut(&mut self, buffer_id: u64) -> Option<&mut BufferState> {
         self.buffers.iter_mut().find(|buffer| buffer.id == buffer_id)
+    }
+
+    pub fn update_dirty_syntax_layers(&mut self) {
+        for buffer in &mut self.buffers {
+            if buffer.syntax.is_dirty() {
+                let source = buffer.document.text();
+                let _ = buffer.syntax.reparse(source.as_bytes());
+            }
+        }
+    }
+
+    pub fn syntax_spans_for_line(&self, buffer_id: u64, line_index: usize) -> Vec<HighlightSpan> {
+        let Some(buffer) = self.buffer_by_id(buffer_id) else {
+            return Vec::new();
+        };
+        let Some(tree) = buffer.syntax.tree() else {
+            return Vec::new();
+        };
+        let Some(lang_id) = buffer.syntax.language_id() else {
+            return Vec::new();
+        };
+        let registry = LanguageRegistry::global();
+        let Some(query) = registry.highlight_query(lang_id) else {
+            return Vec::new();
+        };
+
+        let source = buffer.document.text();
+        let source_bytes = source.as_bytes();
+        let line_start = buffer.document.line_to_byte(line_index);
+        let line_end = if line_index + 1 < buffer.document.line_count() {
+            buffer.document.line_to_byte(line_index + 1)
+        } else {
+            source_bytes.len()
+        };
+
+        spans_for_line(tree, query, source_bytes, line_start, line_end)
+    }
+
+    pub fn switch_theme(&mut self, name: &str) -> bool {
+        match Theme::load_embedded(name) {
+            Some(theme) => {
+                self.active_theme = theme;
+                true
+            }
+            None => false,
+        }
+    }
+
+    pub fn active_theme(&self) -> &Theme {
+        &self.active_theme
+    }
+
+    pub fn active_theme_name(&self) -> &str {
+        &self.active_theme.name
     }
 
     pub(crate) fn active_pane(&self) -> &crate::ui::Pane {

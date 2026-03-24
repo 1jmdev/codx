@@ -1,0 +1,43 @@
+name = "Tokyo Night"
+
+[palette]
+background = "#1a1b26"
+foreground = "#c0caf5"
+
+[highlights]
+"comment" = { fg = "#565f89", italic = true }
+"comment.doc" = { fg = "#565f89", italic = true }
+"keyword" = { fg = "#9d7cd8" }
+"keyword.function" = { fg = "#9d7cd8" }
+"keyword.storage" = { fg = "#9d7cd8" }
+"keyword.type" = { fg = "#9d7cd8" }
+"keyword.operator" = { fg = "#89ddff" }
+"keyword.return" = { fg = "#f7768e" }
+"keyword.control" = { fg = "#9d7cd8" }
+"string" = { fg = "#9ece6a" }
+"string.escape" = { fg = "#73daca" }
+"number" = { fg = "#ff9e64" }
+"float" = { fg = "#ff9e64" }
+"boolean" = { fg = "#ff9e64" }
+"operator" = { fg = "#89ddff" }
+"punctuation" = { fg = "#a9b1d6" }
+"punctuation.delimiter" = { fg = "#a9b1d6" }
+"punctuation.bracket" = { fg = "#a9b1d6" }
+"function" = { fg = "#7aa2f7" }
+"function.method" = { fg = "#7aa2f7" }
+"function.builtin" = { fg = "#2ac3de", bold = true }
+"function.macro" = { fg = "#9d7cd8" }
+"type" = { fg = "#e0af68" }
+"type.builtin" = { fg = "#e0af68", bold = true }
+"variable" = { fg = "#c0caf5" }
+"variable.parameter" = { fg = "#c0caf5" }
+"variable.builtin" = { fg = "#f7768e" }
+"constant" = { fg = "#ff9e64" }
+"constant.builtin" = { fg = "#ff9e64", bold = true }
+"attribute" = { fg = "#f7768e" }
+"property" = { fg = "#73daca" }
+"namespace" = { fg = "#f7768e" }
+"escape" = { fg = "#73daca" }
+"label" = { fg = "#2ac3de" }
+"special" = { fg = "#9d7cd8" }
+"error" = { fg = "#f7768e" }

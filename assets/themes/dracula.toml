@@ -1,0 +1,43 @@
+name = "Dracula"
+
+[palette]
+background = "#282a36"
+foreground = "#f8f8f2"
+
+[highlights]
+"comment" = { fg = "#6272a4", italic = true }
+"comment.doc" = { fg = "#6272a4", italic = true }
+"keyword" = { fg = "#ff79c6" }
+"keyword.function" = { fg = "#ff79c6" }
+"keyword.storage" = { fg = "#ff79c6" }
+"keyword.type" = { fg = "#ff79c6" }
+"keyword.operator" = { fg = "#ff79c6" }
+"keyword.return" = { fg = "#ff79c6" }
+"keyword.control" = { fg = "#ff79c6" }
+"string" = { fg = "#f1fa8c" }
+"string.escape" = { fg = "#50fa7b" }
+"number" = { fg = "#bd93f9" }
+"float" = { fg = "#bd93f9" }
+"boolean" = { fg = "#bd93f9" }
+"operator" = { fg = "#ff79c6" }
+"punctuation" = { fg = "#f8f8f2" }
+"punctuation.delimiter" = { fg = "#f8f8f2" }
+"punctuation.bracket" = { fg = "#f8f8f2" }
+"function" = { fg = "#50fa7b" }
+"function.method" = { fg = "#50fa7b" }
+"function.builtin" = { fg = "#8be9fd", bold = true }
+"function.macro" = { fg = "#ff79c6" }
+"type" = { fg = "#8be9fd" }
+"type.builtin" = { fg = "#8be9fd", bold = true }
+"variable" = { fg = "#f8f8f2" }
+"variable.parameter" = { fg = "#ffb86c" }
+"variable.builtin" = { fg = "#bd93f9" }
+"constant" = { fg = "#bd93f9" }
+"constant.builtin" = { fg = "#bd93f9", bold = true }
+"attribute" = { fg = "#50fa7b" }
+"property" = { fg = "#66d9e8" }
+"namespace" = { fg = "#ff79c6" }
+"escape" = { fg = "#50fa7b" }
+"label" = { fg = "#8be9fd" }
+"special" = { fg = "#bd93f9" }
+"error" = { fg = "#ff5555" }

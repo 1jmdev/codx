@@ -137,6 +137,22 @@ impl App {
                 });
                 self.jump_to_active_search_match();
             }
+            "theme list" | "themes" => {
+                let names = crate::config::Theme::available_names().join(", ");
+                self.set_message(&format!("Themes: {names}"), MessageKind::Info);
+            }
+            _ if command.starts_with("theme ") => {
+                let name = command.trim_start_matches("theme ").trim();
+                if !self.switch_theme(name) {
+                    let names = crate::config::Theme::available_names().join(", ");
+                    self.set_message(
+                        &format!("Unknown theme '{name}'. Available: {names}"),
+                        MessageKind::Warning,
+                    );
+                } else {
+                    self.set_message(&format!("Theme switched to: {name}"), MessageKind::Info);
+                }
+            }
             _ => self.set_message("Unknown command", MessageKind::Warning),
         }
 

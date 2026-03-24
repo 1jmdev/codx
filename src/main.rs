@@ -1,8 +1,10 @@
 mod app;
+mod config;
 mod core;
 mod editor;
 mod file;
 mod keymap;
+mod syntax;
 mod ui;
 mod util;
 mod view;

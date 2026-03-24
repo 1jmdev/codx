@@ -1,6 +1,6 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Widget};
 use ratatui::Frame;
@@ -8,6 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::{App, AppMode, FocusTarget, MessageKind};
+use crate::syntax::{FoldRange, HighlightSpan, compute_folds};
 use crate::ui::Palette;
 use crate::view::build_statusline;
 
@@ -141,6 +142,12 @@ fn render_buffer_view(
         return;
     };
 
+    let folds: Vec<FoldRange> = buffer_state
+        .syntax
+        .tree()
+        .map(|t| compute_folds(t))
+        .unwrap_or_default();
+
     let gutter_width =
         gutter_width(buffer_state.document.line_count()).min(area.width.saturating_sub(1));
     let text_area = Rect {
@@ -152,8 +159,13 @@ fn render_buffer_view(
 
     for row in 0..area.height as usize {
         let line_index = pane.viewport().top_line() + row;
+        let is_foldable = folds.iter().any(|f| f.start_line == line_index && f.end_line > line_index);
         let line_number = if line_index < buffer_state.document.line_count() {
-            format!("{:>4} ", line_index + 1)
+            if is_foldable {
+                format!("{:>3}\u{25be} ", line_index + 1)
+            } else {
+                format!("{:>4} ", line_index + 1)
+            }
         } else {
             String::from("~    ")
         };
@@ -176,12 +188,17 @@ fn render_buffer_view(
         );
     }
 
+    let theme = app.active_theme();
+    let editor_style = Style::default()
+        .fg(Color::Rgb(theme.foreground.r, theme.foreground.g, theme.foreground.b))
+        .bg(Color::Rgb(theme.background.r, theme.background.g, theme.background.b));
+
     let mut lines = Vec::with_capacity(area.height as usize);
     for row in 0..text_area.height as usize {
         let line_index = pane.viewport().top_line() + row;
         lines.push(render_text_line(app, buffer_id, pane_id, line_index, text_area.width as usize));
     }
-    Paragraph::new(lines).style(palette.editor).render(text_area, buffer);
+    Paragraph::new(lines).style(editor_style).render(text_area, buffer);
 }
 
 fn render_text_line(
@@ -204,19 +221,27 @@ fn render_text_line(
     }
 
     let raw_line = buffer_state.document.line_text(line_index);
+    let syntax_spans = app.syntax_spans_for_line(buffer_id, line_index);
+    let theme = app.active_theme();
+    let plain_style = Style::default()
+        .fg(Color::Rgb(theme.foreground.r, theme.foreground.g, theme.foreground.b));
+
     let mut spans = Vec::new();
     let mut display_column = 0usize;
     let mut char_column = 0usize;
+    let mut byte_offset = 0usize;
 
     for grapheme in raw_line.graphemes(true) {
         let expanded = if grapheme == "\t" { "    " } else { grapheme };
         let grapheme_width = expanded.width().max(1);
         let next_display = display_column + grapheme_width;
         let grapheme_chars = grapheme.chars().count().max(1);
+        let grapheme_bytes = grapheme.len();
 
         if next_display <= pane.viewport().left_column() {
             display_column = next_display;
             char_column += grapheme_chars;
+            byte_offset += grapheme_bytes;
             continue;
         }
 
@@ -224,10 +249,21 @@ fn render_text_line(
             break;
         }
 
-        let style = style_for_position(app, pane_id, line_index, char_column, palette.editor);
-        spans.push(Span::styled(expanded.to_string(), style));
+        let base_style = if pane.selection().contains(line_index, char_column) {
+            palette.selection
+        } else if pane.search().is_active_match_at(line_index, char_column) {
+            palette.active_search_match
+        } else if pane.search().is_match_at(line_index, char_column) {
+            palette.search_match
+        } else {
+            let syntax_style = find_span_style(&syntax_spans, byte_offset, theme);
+            syntax_style.unwrap_or(plain_style)
+        };
+
+        spans.push(Span::styled(expanded.to_string(), base_style));
         display_column = next_display;
         char_column += grapheme_chars;
+        byte_offset += grapheme_bytes;
     }
 
     if pane.selection().starts_at(line_index, raw_line.chars().count()) {
@@ -237,27 +273,38 @@ fn render_text_line(
     Line::from(spans)
 }
 
-fn style_for_position(
-    app: &App,
-    pane_id: u64,
-    line: usize,
-    column: usize,
-    default: Style,
-) -> Style {
-    let palette = Palette::mocha().styles();
-    let Some(pane) = app.layout.pane(pane_id) else {
-        return default;
-    };
-    if pane.selection().contains(line, column) {
-        palette.selection
-    } else if pane.search().is_active_match_at(line, column) {
-        palette.active_search_match
-    } else if pane.search().is_match_at(line, column) {
-        palette.search_match
-    } else {
-        default
+fn find_span_style(
+    spans: &[HighlightSpan],
+    byte_offset: usize,
+    theme: &crate::config::Theme,
+) -> Option<Style> {
+    let capture = spans
+        .iter()
+        .rev()
+        .find(|s| s.start_byte <= byte_offset && byte_offset < s.end_byte)
+        .map(|s| s.capture)?;
+
+    let theme_style = theme.for_capture(capture)?;
+
+    let mut style = Style::default();
+    if let Some(fg) = theme_style.fg {
+        style = style.fg(Color::Rgb(fg.r, fg.g, fg.b));
     }
+    if let Some(bg) = theme_style.bg {
+        style = style.bg(Color::Rgb(bg.r, bg.g, bg.b));
+    }
+    if theme_style.bold {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    if theme_style.italic {
+        style = style.add_modifier(Modifier::ITALIC);
+    }
+    if theme_style.underline {
+        style = style.add_modifier(Modifier::UNDERLINED);
+    }
+    Some(style)
 }
+
 
 fn render_statusline(buffer: &mut Buffer, area: Rect, app: &App) {
     let palette = Palette::mocha().styles();

@@ -1,0 +1,43 @@
+name = "Solarized Dark"
+
+[palette]
+background = "#002b36"
+foreground = "#839496"
+
+[highlights]
+"comment" = { fg = "#586e75", italic = true }
+"comment.doc" = { fg = "#586e75", italic = true }
+"keyword" = { fg = "#859900" }
+"keyword.function" = { fg = "#268bd2" }
+"keyword.storage" = { fg = "#cb4b16" }
+"keyword.type" = { fg = "#2aa198" }
+"keyword.operator" = { fg = "#859900" }
+"keyword.return" = { fg = "#859900" }
+"keyword.control" = { fg = "#859900" }
+"string" = { fg = "#2aa198" }
+"string.escape" = { fg = "#dc322f" }
+"number" = { fg = "#d33682" }
+"float" = { fg = "#d33682" }
+"boolean" = { fg = "#cb4b16" }
+"operator" = { fg = "#859900" }
+"punctuation" = { fg = "#839496" }
+"punctuation.delimiter" = { fg = "#839496" }
+"punctuation.bracket" = { fg = "#839496" }
+"function" = { fg = "#268bd2" }
+"function.method" = { fg = "#268bd2" }
+"function.builtin" = { fg = "#b58900", bold = true }
+"function.macro" = { fg = "#d33682" }
+"type" = { fg = "#b58900" }
+"type.builtin" = { fg = "#b58900", bold = true }
+"variable" = { fg = "#839496" }
+"variable.parameter" = { fg = "#839496" }
+"variable.builtin" = { fg = "#cb4b16" }
+"constant" = { fg = "#cb4b16" }
+"constant.builtin" = { fg = "#cb4b16", bold = true }
+"attribute" = { fg = "#dc322f" }
+"property" = { fg = "#2aa198" }
+"namespace" = { fg = "#268bd2" }
+"escape" = { fg = "#dc322f" }
+"label" = { fg = "#268bd2" }
+"special" = { fg = "#d33682" }
+"error" = { fg = "#dc322f" }

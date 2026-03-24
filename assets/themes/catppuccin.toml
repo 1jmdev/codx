@@ -1,0 +1,43 @@
+name = "Catppuccin Mocha"
+
+[palette]
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+
+[highlights]
+"comment" = { fg = "#6c7086", italic = true }
+"comment.doc" = { fg = "#6c7086", italic = true }
+"keyword" = { fg = "#cba6f7" }
+"keyword.function" = { fg = "#cba6f7" }
+"keyword.storage" = { fg = "#cba6f7" }
+"keyword.type" = { fg = "#cba6f7" }
+"keyword.operator" = { fg = "#89dceb" }
+"keyword.return" = { fg = "#cba6f7" }
+"keyword.control" = { fg = "#cba6f7" }
+"string" = { fg = "#a6e3a1" }
+"string.escape" = { fg = "#94e2d5" }
+"number" = { fg = "#fab387" }
+"float" = { fg = "#fab387" }
+"boolean" = { fg = "#fab387" }
+"operator" = { fg = "#89dceb" }
+"punctuation" = { fg = "#bac2de" }
+"punctuation.delimiter" = { fg = "#bac2de" }
+"punctuation.bracket" = { fg = "#bac2de" }
+"function" = { fg = "#89b4fa" }
+"function.method" = { fg = "#89b4fa" }
+"function.builtin" = { fg = "#89b4fa", bold = true }
+"function.macro" = { fg = "#f38ba8" }
+"type" = { fg = "#f9e2af" }
+"type.builtin" = { fg = "#f9e2af", bold = true }
+"variable" = { fg = "#cdd6f4" }
+"variable.parameter" = { fg = "#cdd6f4" }
+"variable.builtin" = { fg = "#f38ba8" }
+"constant" = { fg = "#fab387" }
+"constant.builtin" = { fg = "#fab387", bold = true }
+"attribute" = { fg = "#f38ba8" }
+"property" = { fg = "#89dceb" }
+"namespace" = { fg = "#f38ba8" }
+"escape" = { fg = "#94e2d5" }
+"label" = { fg = "#74c7ec" }
+"special" = { fg = "#cba6f7" }
+"error" = { fg = "#f38ba8" }
