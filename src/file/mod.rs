@@ -1,14 +1,14 @@
 mod bootstrap;
-mod io;
 mod explorer;
 mod finder;
+mod io;
 mod recent;
 mod watcher;
 mod workspace;
 
+pub(crate) use bootstrap::open_app;
 pub use explorer::ExplorerState;
 pub use finder::{FileFinder, FinderItem};
-pub use io::{load_document, save_document, FileError};
+pub use io::{FileError, load_document, save_document};
 pub use recent::RecentFiles;
 pub use watcher::FileWatcher;
-pub(crate) use bootstrap::open_app;

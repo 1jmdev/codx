@@ -1,5 +1,5 @@
-mod event_loop;
 mod error;
+mod event_loop;
 mod layout;
 mod palette;
 mod pane;
@@ -10,6 +10,7 @@ mod split;
 mod workspace;
 
 pub use error::UiError;
+pub(crate) use event_loop::run_app;
 pub use layout::LayoutState;
 #[allow(unused_imports)]
 pub use palette::{Palette, PaletteStyles};
@@ -17,4 +18,3 @@ pub use pane::Pane;
 pub use picker::{PickerItem, PickerKind, PickerState};
 pub use renderer::render;
 pub use split::{SplitDirection, WindowNode};
-pub(crate) use event_loop::run_app;

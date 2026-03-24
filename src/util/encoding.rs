@@ -1,4 +1,4 @@
-use encoding_rs::{Encoding, UTF_16BE, UTF_16LE, UTF_8, WINDOWS_1252};
+use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE, WINDOWS_1252};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy)]

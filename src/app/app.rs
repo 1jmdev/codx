@@ -6,8 +6,8 @@ use crate::config::Theme;
 use crate::core::{Document, History};
 use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles};
 use crate::syntax::{
-    compute_folds, markdown_code_block_spans_for_line, spans_for_line, HighlightSpan, LanguageId,
-    LanguageRegistry, SyntaxLayer,
+    HighlightSpan, LanguageId, LanguageRegistry, SyntaxLayer, compute_folds,
+    markdown_code_block_spans_for_line, spans_for_line,
 };
 use crate::ui::{LayoutState, PickerState};
 use crate::util::{Clipboard, DetectedEncoding};

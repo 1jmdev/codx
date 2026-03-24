@@ -44,7 +44,9 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
         KeyCode::Char('w') if control => Some(Command::FocusNextPane),
         KeyCode::Char('g') if control => Some(Command::SearchPrevious),
         KeyCode::Char('S') if control => Some(Command::SaveAs),
-        KeyCode::Char('s') if control && modifiers.contains(KeyModifiers::SHIFT) => Some(Command::SaveAs),
+        KeyCode::Char('s') if control && modifiers.contains(KeyModifiers::SHIFT) => {
+            Some(Command::SaveAs)
+        }
         KeyCode::Char('s') if control => Some(Command::Save),
         KeyCode::Char('c') if control => Some(Command::CopySelection),
         KeyCode::Char('x') if control => Some(Command::CutSelection),

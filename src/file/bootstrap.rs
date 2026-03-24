@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use crate::app::{App, AppError, AppMode, BufferState, FocusTarget, MessageKind, Theme};
-use crate::file::{load_document, ExplorerState, FileFinder, FileWatcher, RecentFiles};
-use crate::syntax::{language_for_path, SyntaxLayer};
+use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles, load_document};
+use crate::syntax::{SyntaxLayer, language_for_path};
 use crate::util::{Clipboard, DetectedEncoding};
 use std::cell::RefCell;
 

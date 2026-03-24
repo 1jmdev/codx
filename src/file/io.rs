@@ -6,7 +6,7 @@ use tempfile::NamedTempFile;
 use thiserror::Error;
 
 use crate::core::Document;
-use crate::util::{decode_text, encode_text, DetectedEncoding, EncodingError};
+use crate::util::{DetectedEncoding, EncodingError, decode_text, encode_text};
 
 #[derive(Debug)]
 pub struct LoadedDocument {
@@ -68,11 +68,15 @@ pub fn save_document(
 }
 
 fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), FileError> {
-    let parent = path.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."));
+    let parent = path
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."));
     let mut temp = NamedTempFile::new_in(parent)?;
     temp.write_all(bytes)?;
     temp.flush()?;
-    temp.persist(path).map_err(|error| FileError::Io(error.error))?;
+    temp.persist(path)
+        .map_err(|error| FileError::Io(error.error))?;
     Ok(())
 }
 
@@ -94,7 +98,8 @@ mod tests {
         let path = std::env::temp_dir().join(format!("codx-{suffix}.txt"));
         let mut document = Document::new_empty(Some(path.clone()));
         document.insert_text(Cursor::new(0, 0), "hello\nworld");
-        save_document(&path, &document, DetectedEncoding::default()).unwrap_or_else(|error| panic!("{error}"));
+        save_document(&path, &document, DetectedEncoding::default())
+            .unwrap_or_else(|error| panic!("{error}"));
         let loaded = load_document(&path).unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(loaded.document.text(), "hello\nworld");
         let _ = fs::remove_file(path);

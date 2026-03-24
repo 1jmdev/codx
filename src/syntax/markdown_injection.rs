@@ -1,7 +1,7 @@
 use tree_sitter::{Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::syntax::{
-    language_for_name, spans_for_line, HighlightSpan, LanguageId, LanguageRegistry,
+    HighlightSpan, LanguageId, LanguageRegistry, language_for_name, spans_for_line,
 };
 
 pub fn markdown_code_block_spans_for_line(

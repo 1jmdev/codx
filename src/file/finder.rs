@@ -50,8 +50,17 @@ impl FileFinder {
             })
             .collect::<Vec<_>>();
 
-        scored.sort_by(|left, right| right.0.cmp(&left.0).then_with(|| left.1.display.cmp(&right.1.display)));
-        scored.into_iter().take(limit).map(|(_, item)| item).collect()
+        scored.sort_by(|left, right| {
+            right
+                .0
+                .cmp(&left.0)
+                .then_with(|| left.1.display.cmp(&right.1.display))
+        });
+        scored
+            .into_iter()
+            .take(limit)
+            .map(|(_, item)| item)
+            .collect()
     }
 }
 
@@ -86,7 +95,9 @@ fn ignored_paths() -> GlobSet {
             builder.add(glob);
         }
     }
-    builder
-        .build()
-        .unwrap_or_else(|_| GlobSetBuilder::new().build().unwrap_or_else(|_| unreachable!()))
+    builder.build().unwrap_or_else(|_| {
+        GlobSetBuilder::new()
+            .build()
+            .unwrap_or_else(|_| unreachable!())
+    })
 }

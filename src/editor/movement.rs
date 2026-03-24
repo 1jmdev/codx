@@ -3,12 +3,16 @@ use crate::core::{Cursor, Selection};
 
 impl App {
     pub(crate) fn move_left(&mut self, extend: bool) {
-        let target = self.active_document().previous_position(self.active_pane().cursor());
+        let target = self
+            .active_document()
+            .previous_position(self.active_pane().cursor());
         self.update_cursor(target, extend);
     }
 
     pub(crate) fn move_right(&mut self, extend: bool) {
-        let target = self.active_document().next_position(self.active_pane().cursor());
+        let target = self
+            .active_document()
+            .next_position(self.active_pane().cursor());
         self.update_cursor(target, extend);
     }
 
@@ -27,22 +31,30 @@ impl App {
     }
 
     pub(crate) fn move_line_start(&mut self, extend: bool) {
-        let target = self.active_document().line_start(self.active_pane().cursor().line);
+        let target = self
+            .active_document()
+            .line_start(self.active_pane().cursor().line);
         self.update_cursor(target, extend);
     }
 
     pub(crate) fn move_line_end(&mut self, extend: bool) {
-        let target = self.active_document().line_end(self.active_pane().cursor().line);
+        let target = self
+            .active_document()
+            .line_end(self.active_pane().cursor().line);
         self.update_cursor(target, extend);
     }
 
     pub(crate) fn move_word_left(&mut self, extend: bool) {
-        let target = self.active_document().previous_word_start(self.active_pane().cursor());
+        let target = self
+            .active_document()
+            .previous_word_start(self.active_pane().cursor());
         self.update_cursor(target, extend);
     }
 
     pub(crate) fn move_word_right(&mut self, extend: bool) {
-        let target = self.active_document().next_word_start(self.active_pane().cursor());
+        let target = self
+            .active_document()
+            .next_word_start(self.active_pane().cursor());
         self.update_cursor(target, extend);
     }
 
@@ -75,7 +87,9 @@ impl App {
     fn update_cursor(&mut self, target: Cursor, extend: bool) {
         let preferred = self.active_document().display_column(target);
         let selection = if extend {
-            self.active_pane().selection().with_active(target.with_preferred_column(preferred))
+            self.active_pane()
+                .selection()
+                .with_active(target.with_preferred_column(preferred))
         } else {
             Selection::caret(target.with_preferred_column(preferred))
         };

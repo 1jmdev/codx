@@ -21,7 +21,8 @@ impl SearchState {
     }
 
     pub fn active_match(&self) -> Option<SearchMatch> {
-        self.active_index.and_then(|index| self.matches.get(index).copied())
+        self.active_index
+            .and_then(|index| self.matches.get(index).copied())
     }
 
     #[cfg(test)]
@@ -71,7 +72,10 @@ impl SearchState {
             return None;
         }
 
-        let next = self.active_index.map(|index| (index + 1) % len).unwrap_or(0);
+        let next = self
+            .active_index
+            .map(|index| (index + 1) % len)
+            .unwrap_or(0);
         self.active_index = Some(next);
         self.active_match()
     }
@@ -158,7 +162,10 @@ fn find_active_match_index(matches: &[SearchMatch], cursor: Cursor) -> Option<us
 
     matches
         .iter()
-        .position(|item| item.line > cursor.line || (item.line == cursor.line && item.start_column >= cursor.column))
+        .position(|item| {
+            item.line > cursor.line
+                || (item.line == cursor.line && item.start_column >= cursor.column)
+        })
         .or(Some(0))
 }
 

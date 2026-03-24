@@ -78,7 +78,10 @@ impl ExplorerState {
         let Some(path) = self.selected_entry().map(|entry| entry.path.clone()) else {
             return;
         };
-        let is_dir = self.selected_entry().map(|entry| entry.is_dir).unwrap_or(false);
+        let is_dir = self
+            .selected_entry()
+            .map(|entry| entry.is_dir)
+            .unwrap_or(false);
         if !is_dir {
             return;
         }
@@ -97,7 +100,11 @@ impl ExplorerState {
         let root = self.root.clone();
         self.walk_directory(&root, 0);
         if let Some(selected_path) = selected_path {
-            if let Some(index) = self.entries.iter().position(|entry| entry.path == selected_path) {
+            if let Some(index) = self
+                .entries
+                .iter()
+                .position(|entry| entry.path == selected_path)
+            {
                 self.selected = index;
                 return;
             }

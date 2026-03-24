@@ -7,7 +7,11 @@ pub fn build_statusline(app: &App) -> String {
         .and_then(|path| path.file_name())
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| String::from("[No Name]"));
-    let dirty = if app.active_document().is_dirty() { " [+]" } else { "" };
+    let dirty = if app.active_document().is_dirty() {
+        " [+]"
+    } else {
+        ""
+    };
     let read_only = if app.is_read_only() { " [RO]" } else { "" };
     let line = app.active_pane().cursor().line + 1;
     let column = app.display_column() + 1;

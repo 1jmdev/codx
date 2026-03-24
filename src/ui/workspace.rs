@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::app::{App, FocusTarget};
 use crate::core::{Document, History};
-use crate::syntax::{language_for_path, SyntaxLayer};
+use crate::syntax::{SyntaxLayer, language_for_path};
 use crate::ui::{PickerItem, PickerKind, PickerState, SplitDirection};
 use crate::util::DetectedEncoding;
 

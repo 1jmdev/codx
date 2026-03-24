@@ -1,11 +1,11 @@
 use std::io::{self, Stdout};
 
+use crossterm::ExecutableCommand;
 use crossterm::cursor::Show;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::execute;
-use crossterm::ExecutableCommand;
-use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use ratatui::backend::CrosstermBackend;
 
 use crate::app::AppError;
 

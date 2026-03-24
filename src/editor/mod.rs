@@ -1,10 +1,10 @@
 mod clipboard;
-mod command_bar;
 mod command;
+mod command_bar;
 mod history_actions;
 mod movement;
-mod search_actions;
 mod search;
+mod search_actions;
 mod text_edit;
 
 pub use command::Command;

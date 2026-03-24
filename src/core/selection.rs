@@ -61,7 +61,9 @@ mod tests {
     #[test]
     fn selection_normalizes_order() {
         let selection = Selection::caret(Cursor::new(3, 4)).with_active(Cursor::new(1, 2));
-        let normalized = selection.normalized().unwrap_or_else(|| panic!("selection should not be empty"));
+        let normalized = selection
+            .normalized()
+            .unwrap_or_else(|| panic!("selection should not be empty"));
         assert_eq!(normalized.0, Cursor::new(1, 2));
         assert_eq!(normalized.1, Cursor::new(3, 4));
     }

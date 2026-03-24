@@ -1,5 +1,5 @@
-use ratatui::style::{Color, Modifier, Style};
 use ratatui::style::Color::Reset;
+use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Palette {

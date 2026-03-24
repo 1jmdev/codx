@@ -23,7 +23,9 @@ impl WindowNode {
     pub fn pane(&self, pane_id: u64) -> Option<&Pane> {
         match self {
             WindowNode::Leaf(pane) => (pane.id() == pane_id).then_some(pane),
-            WindowNode::Split { first, second, .. } => first.pane(pane_id).or_else(|| second.pane(pane_id)),
+            WindowNode::Split { first, second, .. } => {
+                first.pane(pane_id).or_else(|| second.pane(pane_id))
+            }
         }
     }
 
@@ -127,7 +129,8 @@ impl WindowNode {
                     *ratio = next.clamp(20, 80) as u16;
                     true
                 } else {
-                    first.resize_split(target_pane_id, delta) || second.resize_split(target_pane_id, delta)
+                    first.resize_split(target_pane_id, delta)
+                        || second.resize_split(target_pane_id, delta)
                 }
             }
         }

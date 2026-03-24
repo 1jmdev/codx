@@ -90,7 +90,9 @@ impl App {
                 self.mode = AppMode::Editing;
             }
             CommandBarMode::ExplorerRename => {
-                let path = self.explorer.rename_selected(self.command_bar.input.trim())?;
+                let path = self
+                    .explorer
+                    .rename_selected(self.command_bar.input.trim())?;
                 self.file_finder.refresh();
                 self.explorer.refresh();
                 self.set_message(&format!("Renamed to {}", path.display()), MessageKind::Info);
