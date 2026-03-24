@@ -20,10 +20,8 @@ pub fn build_statusline(app: &App) -> String {
     let encoding = app.active_buffer().encoding.label();
     let theme_name = app.active_theme_name();
     let diagnostics = app
-        .active_document()
-        .path()
-        .map(|path| app.lsp.diagnostics_count(Some(path)))
-        .unwrap_or(0);
+        .lsp
+        .diagnostics_counts_for_path(app.active_document().path());
     let progress = app.lsp.progress.label();
     let progress_suffix = if progress.is_empty() {
         String::new()
@@ -32,6 +30,10 @@ pub fn build_statusline(app: &App) -> String {
     };
 
     format!(
-        "{file_name}{dirty}{read_only}  Ln {line}, Col {column}  {total_lines} lines  {encoding}  {theme_name}  {pane_count} pane(s)  diag:{diagnostics}{progress_suffix}"
+        "{file_name}{dirty}{read_only}  Ln {line}, Col {column}  {total_lines} lines  {encoding}  {theme_name}  {pane_count} pane(s)  E:{} W:{} I:{} H:{}{progress_suffix}",
+        diagnostics.errors,
+        diagnostics.warnings,
+        diagnostics.information,
+        diagnostics.hints,
     )
 }

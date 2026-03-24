@@ -13,4 +13,5 @@ mod signature;
 mod transport;
 mod workspace;
 
+pub use diagnostics::{DiagnosticItem, DiagnosticSeverityView};
 pub use workspace::LspWorkspace;

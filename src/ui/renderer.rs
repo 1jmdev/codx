@@ -8,6 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::{App, AppMode, FocusTarget, MessageKind};
+use crate::lsp::{DiagnosticItem, DiagnosticSeverityView};
 use crate::syntax::HighlightSpan;
 use crate::ui::Palette;
 use crate::view::build_statusline;
@@ -154,6 +155,11 @@ fn render_buffer_view(buffer: &mut Buffer, area: Rect, app: &App, buffer_id: u64
         width: area.width.saturating_sub(gutter_width),
         height: area.height,
     };
+    let diagnostics = buffer_state
+        .document
+        .path()
+        .map(|path| app.lsp.diagnostics_for_path(path))
+        .unwrap_or(&[]);
 
     for row in 0..area.height as usize {
         let line_index = pane.viewport().top_line() + row;
@@ -172,7 +178,13 @@ fn render_buffer_view(buffer: &mut Buffer, area: Rect, app: &App, buffer_id: u64
         let style = if line_index == pane.cursor().line {
             palette.gutter_current
         } else if line_index < buffer_state.document.line_count() {
-            palette.gutter
+            match line_max_diagnostic_severity(diagnostics, line_index) {
+                Some(DiagnosticSeverityView::Error) => palette.diagnostic_error,
+                Some(DiagnosticSeverityView::Warning) => palette.diagnostic_warning,
+                Some(DiagnosticSeverityView::Information) => palette.diagnostic_information,
+                Some(DiagnosticSeverityView::Hint) => palette.diagnostic_hint,
+                None => palette.gutter,
+            }
         } else {
             palette.tilde
         };
@@ -238,6 +250,17 @@ fn render_text_line(
 
     let raw_line = buffer_state.document.line_text(line_index);
     let syntax_spans = app.syntax_spans_for_line(buffer_id, line_index);
+    let diagnostics = buffer_state
+        .document
+        .path()
+        .map(|path| app.lsp.diagnostics_for_path(path))
+        .unwrap_or(&[]);
+    let line_severity = line_max_diagnostic_severity(diagnostics, line_index);
+    let line_message = diagnostics
+        .iter()
+        .filter(|diag| diag.line == line_index)
+        .max_by_key(|diag| diag.severity.rank())
+        .map(|diag| diag.message.as_str());
     let theme = app.active_theme();
     let plain_style = Style::default().fg(Color::Rgb(
         theme.foreground.r,
@@ -268,7 +291,7 @@ fn render_text_line(
             break;
         }
 
-        let base_style = if pane.selection().contains(line_index, char_column) {
+        let mut base_style = if pane.selection().contains(line_index, char_column) {
             palette.selection
         } else if pane.search().is_active_match_at(line_index, char_column) {
             palette.active_search_match
@@ -278,6 +301,10 @@ fn render_text_line(
             let syntax_style = find_span_style(&syntax_spans, byte_offset, theme);
             syntax_style.unwrap_or(plain_style)
         };
+
+        if line_severity == Some(DiagnosticSeverityView::Error) {
+            base_style = base_style.add_modifier(Modifier::UNDERLINED);
+        }
 
         spans.push(Span::styled(expanded.to_string(), base_style));
         display_column = next_display;
@@ -290,6 +317,23 @@ fn render_text_line(
         .starts_at(line_index, raw_line.chars().count())
     {
         spans.push(Span::styled(" ", palette.selection));
+    }
+
+    if let Some(message) = line_message {
+        let visible_len = pane.viewport().left_column() + width;
+        if raw_line.chars().count() < visible_len {
+            let mut lens = String::from("      // ");
+            lens.push_str(&single_line_diagnostic_message(message));
+            lens.push(' ');
+
+            let style = match line_severity {
+                Some(DiagnosticSeverityView::Error) => palette.diagnostic_lens_error,
+                Some(DiagnosticSeverityView::Warning) => palette.diagnostic_lens_warning,
+                Some(DiagnosticSeverityView::Information) => palette.diagnostic_lens_information,
+                Some(DiagnosticSeverityView::Hint) | None => palette.diagnostic_lens_hint,
+            };
+            spans.push(Span::styled(lens, style));
+        }
     }
 
     Line::from(spans)
@@ -325,6 +369,28 @@ fn find_span_style(
         style = style.add_modifier(Modifier::UNDERLINED);
     }
     Some(style)
+}
+
+fn line_max_diagnostic_severity(
+    diagnostics: &[DiagnosticItem],
+    line_index: usize,
+) -> Option<DiagnosticSeverityView> {
+    diagnostics
+        .iter()
+        .filter(|diag| diag.line == line_index)
+        .map(|diag| diag.severity)
+        .max_by_key(|severity: &DiagnosticSeverityView| severity.rank())
+}
+
+fn single_line_diagnostic_message(message: &str) -> String {
+    message
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .chars()
+        .take(96)
+        .collect()
 }
 
 fn render_statusline(buffer: &mut Buffer, area: Rect, app: &App) {

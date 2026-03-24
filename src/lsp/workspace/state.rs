@@ -6,7 +6,7 @@ use tokio::runtime::{Builder, Runtime};
 
 use crate::lsp::client::LspClient;
 use crate::lsp::completion::{CompletionContext, CompletionItemView};
-use crate::lsp::diagnostics::{DiagnosticItem, DiagnosticStore};
+use crate::lsp::diagnostics::{DiagnosticCounts, DiagnosticItem, DiagnosticStore};
 use crate::lsp::hover::HoverView;
 use crate::lsp::progress::ProgressState;
 use crate::lsp::signature::SignatureHelpView;
@@ -53,6 +53,11 @@ impl LspWorkspace {
     pub fn diagnostics_count(&self, path: Option<&Path>) -> usize {
         path.map(|p| self.diagnostics.for_path(p).len())
             .unwrap_or(0)
+    }
+
+    pub fn diagnostics_counts_for_path(&self, path: Option<&Path>) -> DiagnosticCounts {
+        path.map(|p| self.diagnostics.counts_for_path(p))
+            .unwrap_or_default()
     }
 
     pub fn toggle_diagnostics_panel(&mut self) {

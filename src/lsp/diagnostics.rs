@@ -11,6 +11,17 @@ pub enum DiagnosticSeverityView {
     Hint,
 }
 
+impl DiagnosticSeverityView {
+    pub fn rank(self) -> u8 {
+        match self {
+            Self::Error => 4,
+            Self::Warning => 3,
+            Self::Information => 2,
+            Self::Hint => 1,
+        }
+    }
+}
+
 impl DiagnosticStore {
     pub fn apply_publish(
         &mut self,
@@ -56,9 +67,32 @@ impl DiagnosticStore {
         self.by_path.iter()
     }
 
+    pub fn counts_for_path(&self, path: &Path) -> DiagnosticCounts {
+        let mut counts = DiagnosticCounts::default();
+        if let Some(items) = self.by_path.get(path) {
+            for diagnostic in items {
+                match diagnostic.severity {
+                    DiagnosticSeverityView::Error => counts.errors += 1,
+                    DiagnosticSeverityView::Warning => counts.warnings += 1,
+                    DiagnosticSeverityView::Information => counts.information += 1,
+                    DiagnosticSeverityView::Hint => counts.hints += 1,
+                }
+            }
+        }
+        counts
+    }
+
     pub fn clear_path(&mut self, path: &Path) {
         self.by_path.remove(path);
     }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DiagnosticCounts {
+    pub errors: usize,
+    pub warnings: usize,
+    pub information: usize,
+    pub hints: usize,
 }
 
 pub fn map_severity(severity: Option<DiagnosticSeverity>) -> DiagnosticSeverityView {
