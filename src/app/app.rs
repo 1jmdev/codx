@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::config::Theme;
 use crate::core::{Document, History};
 use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles};
-use crate::syntax::{HighlightSpan, LanguageRegistry, SyntaxLayer, spans_for_line};
+use crate::syntax::{spans_for_line, HighlightSpan, LanguageRegistry, SyntaxLayer};
 use crate::ui::{LayoutState, PickerState};
 use crate::util::{Clipboard, DetectedEncoding};
 
@@ -163,16 +163,40 @@ impl App {
     }
 
     pub(crate) fn buffer_by_id_mut(&mut self, buffer_id: u64) -> Option<&mut BufferState> {
-        self.buffers.iter_mut().find(|buffer| buffer.id == buffer_id)
+        self.buffers
+            .iter_mut()
+            .find(|buffer| buffer.id == buffer_id)
     }
 
     pub fn update_dirty_syntax_layers(&mut self) {
-        for buffer in &mut self.buffers {
-            if buffer.syntax.is_dirty() {
-                let source = buffer.document.text();
-                let _ = buffer.syntax.reparse(source.as_bytes());
+        let visible = self.visible_buffer_ids();
+        for buffer_id in visible {
+            let Some(buffer) = self.buffer_by_id_mut(buffer_id) else {
+                continue;
+            };
+            if !buffer.syntax.is_dirty() {
+                continue;
+            }
+
+            let source = buffer.document.text();
+            let _ = buffer.syntax.reparse(source.as_bytes());
+            break;
+        }
+    }
+
+    fn visible_buffer_ids(&self) -> Vec<u64> {
+        let pane_ids = self.layout.pane_ids();
+        let mut ids = Vec::with_capacity(pane_ids.len());
+        for pane_id in pane_ids {
+            let Some(pane) = self.layout.pane(pane_id) else {
+                continue;
+            };
+            let buffer_id = pane.buffer_id();
+            if !ids.contains(&buffer_id) {
+                ids.push(buffer_id);
             }
         }
+        ids
     }
 
     pub fn syntax_spans_for_line(&self, buffer_id: u64, line_index: usize) -> Vec<HighlightSpan> {

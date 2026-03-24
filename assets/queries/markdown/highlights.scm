@@ -1,34 +1,47 @@
-; Headings
-(atx_heading (atx_h1_marker) @keyword)
-(atx_heading (atx_h2_marker) @keyword)
-(atx_heading (atx_h3_marker) @keyword)
-(atx_heading (atx_h4_marker) @keyword)
-(atx_heading (atx_h5_marker) @keyword)
-(atx_heading (atx_h6_marker) @keyword)
+;From nvim-treesitter/nvim-treesitter
+(atx_heading
+  (inline) @text.title)
 
-; Code blocks
-(fenced_code_block) @string
-(fenced_code_block_delimiter) @punctuation.bracket
+(setext_heading
+  (paragraph) @text.title)
 
-; Links and images
-(link_destination) @string
+[
+  (atx_h1_marker)
+  (atx_h2_marker)
+  (atx_h3_marker)
+  (atx_h4_marker)
+  (atx_h5_marker)
+  (atx_h6_marker)
+  (setext_h1_underline)
+  (setext_h2_underline)
+] @punctuation.special
 
-; Emphasis
+[
+  (link_title)
+  (indented_code_block)
+  (fenced_code_block)
+] @text.literal
 
-; Block elements
-(block_quote) @string
-(thematic_break) @keyword
+(fenced_code_block_delimiter) @punctuation.delimiter
 
-; Lists
-(list_marker_minus) @punctuation.bracket
-(list_marker_plus) @punctuation.bracket
-(list_marker_star) @punctuation.bracket
-(list_marker_dot) @punctuation.bracket
-(list_marker_parenthesis) @punctuation.bracket
+(code_fence_content) @none
 
-; HTML
+(link_destination) @text.uri
 
-; Inline elements
+(link_label) @text.reference
 
-; Escape
-(backslash_escape) @escape
+[
+  (list_marker_plus)
+  (list_marker_minus)
+  (list_marker_star)
+  (list_marker_dot)
+  (list_marker_parenthesis)
+  (thematic_break)
+] @punctuation.special
+
+[
+  (block_continuation)
+  (block_quote_marker)
+] @punctuation.special
+
+(backslash_escape) @string.escape

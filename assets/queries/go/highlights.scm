@@ -1,62 +1,123 @@
-; Comments
-(comment) @comment
+; Function calls
 
-; Keywords
-[
-  "break" "case" "chan" "const" "continue" "default" "defer"
-  "else" "fallthrough" "for" "go" "goto" "if" "import"
-  "interface" "map" "package" "range" "select" "struct"
-  "switch" "type" "var"
-] @keyword
+(call_expression
+  function: (identifier) @function)
 
-["func"] @keyword.function
-["return"] @keyword.return
+(call_expression
+  function: (identifier) @function.builtin
+  (#match? @function.builtin "^(append|cap|close|complex|copy|delete|imag|len|make|new|panic|print|println|real|recover)$"))
 
-; Strings
-(interpreted_string_literal) @string
-(raw_string_literal) @string
-(escape_sequence) @string.escape
-(rune_literal) @string
+(call_expression
+  function: (selector_expression
+    field: (field_identifier) @function.method))
 
-; Numbers
-(int_literal) @number
-(float_literal) @float
-(imaginary_literal) @number
+; Function definitions
 
-; Booleans
-(true) @boolean
-(false) @boolean
+(function_declaration
+  name: (identifier) @function)
 
-; Nil
-(nil) @constant.builtin
+(method_declaration
+  name: (field_identifier) @function.method)
 
-; Operators
-[
-  "+" "-" "*" "/" "%" "&" "|" "^" "<<" ">>" "&^"
-  "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" "&^="
-  "==" "!=" "<" ">" "<=" ">="
-  "=" ":=" "++" "--" "!" "&&" "||" "<-" "..."
-] @operator
+; Identifiers
 
-; Punctuation
-["," ";" ":"] @punctuation.delimiter
-["(" ")" "[" "]" "{" "}"] @punctuation.bracket
-
-; Functions
-(function_declaration name: (identifier) @function)
-(method_declaration name: (field_identifier) @function.method)
-(call_expression function: (identifier) @function)
-(call_expression function: (selector_expression field: (field_identifier) @function.method))
-
-; Types
 (type_identifier) @type
-(package_identifier) @namespace
-
-; Variables
+(field_identifier) @property
 (identifier) @variable
 
-; Parameters
-(parameter_declaration (identifier) @variable.parameter)
+; Operators
 
-; Constants
-(const_spec name: (identifier) @constant)
+[
+  "--"
+  "-"
+  "-="
+  ":="
+  "!"
+  "!="
+  "..."
+  "*"
+  "*"
+  "*="
+  "/"
+  "/="
+  "&"
+  "&&"
+  "&="
+  "%"
+  "%="
+  "^"
+  "^="
+  "+"
+  "++"
+  "+="
+  "<-"
+  "<"
+  "<<"
+  "<<="
+  "<="
+  "="
+  "=="
+  ">"
+  ">="
+  ">>"
+  ">>="
+  "|"
+  "|="
+  "||"
+  "~"
+] @operator
+
+; Keywords
+
+[
+  "break"
+  "case"
+  "chan"
+  "const"
+  "continue"
+  "default"
+  "defer"
+  "else"
+  "fallthrough"
+  "for"
+  "func"
+  "go"
+  "goto"
+  "if"
+  "import"
+  "interface"
+  "map"
+  "package"
+  "range"
+  "return"
+  "select"
+  "struct"
+  "switch"
+  "type"
+  "var"
+] @keyword
+
+; Literals
+
+[
+  (interpreted_string_literal)
+  (raw_string_literal)
+  (rune_literal)
+] @string
+
+(escape_sequence) @escape
+
+[
+  (int_literal)
+  (float_literal)
+  (imaginary_literal)
+] @number
+
+[
+  (true)
+  (false)
+  (nil)
+  (iota)
+] @constant.builtin
+
+(comment) @comment

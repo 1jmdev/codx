@@ -41,7 +41,41 @@ pub struct Theme {
 
 impl Theme {
     pub fn for_capture(&self, capture: &str) -> Option<&ThemeStyle> {
-        self.highlights.get(capture)
+        if let Some(style) = self.highlights.get(capture) {
+            return Some(style);
+        }
+
+        let fallback = match capture {
+            "comment.documentation" => ["comment.doc", "comment"].as_slice(),
+            "string.special" | "string.special.key" => ["string"].as_slice(),
+            "constructor" => ["type", "constant"].as_slice(),
+            "function.call" | "function.special" => ["function"].as_slice(),
+            "method" | "method.call" => ["function.method", "function"].as_slice(),
+            "field" => ["property"].as_slice(),
+            "parameter" => ["variable.parameter", "variable"].as_slice(),
+            "embedded" => ["special"].as_slice(),
+            "repeat" | "conditional" => ["keyword.control", "keyword"].as_slice(),
+            "preproc" => ["keyword.storage", "keyword"].as_slice(),
+            "tag" => ["type", "keyword"].as_slice(),
+            "tag.error" => ["error", "tag"].as_slice(),
+            "delimiter" => ["punctuation.delimiter", "punctuation"].as_slice(),
+            "text.title" => ["special", "keyword"].as_slice(),
+            "text.literal" => ["string"].as_slice(),
+            "text.uri" | "text.reference" => ["special", "string"].as_slice(),
+            _ => &[],
+        };
+
+        for key in fallback {
+            if let Some(style) = self.highlights.get(*key) {
+                return Some(style);
+            }
+        }
+
+        if let Some((prefix, _)) = capture.rsplit_once('.') {
+            return self.highlights.get(prefix);
+        }
+
+        None
     }
 
     pub fn load_embedded(name: &str) -> Option<Self> {
@@ -58,7 +92,14 @@ impl Theme {
     }
 
     pub fn available_names() -> &'static [&'static str] {
-        &["catppuccin", "gruvbox", "dracula", "onedark", "solarized", "tokyonight"]
+        &[
+            "catppuccin",
+            "gruvbox",
+            "dracula",
+            "onedark",
+            "solarized",
+            "tokyonight",
+        ]
     }
 
     pub fn default_theme() -> Self {
@@ -69,8 +110,16 @@ impl Theme {
 fn empty_theme() -> Theme {
     Theme {
         name: String::from("default"),
-        background: ThemeColor { r: 30, g: 30, b: 46 },
-        foreground: ThemeColor { r: 205, g: 214, b: 244 },
+        background: ThemeColor {
+            r: 30,
+            g: 30,
+            b: 46,
+        },
+        foreground: ThemeColor {
+            r: 205,
+            g: 214,
+            b: 244,
+        },
         highlights: HashMap::new(),
     }
 }
@@ -104,10 +153,16 @@ struct TomlStyle {
 fn parse_theme_toml(source: &str) -> Option<Theme> {
     let toml: TomlTheme = toml::from_str(source).ok()?;
 
-    let background = ThemeColor::from_hex(&toml.palette.background)
-        .unwrap_or(ThemeColor { r: 30, g: 30, b: 46 });
-    let foreground = ThemeColor::from_hex(&toml.palette.foreground)
-        .unwrap_or(ThemeColor { r: 205, g: 214, b: 244 });
+    let background = ThemeColor::from_hex(&toml.palette.background).unwrap_or(ThemeColor {
+        r: 30,
+        g: 30,
+        b: 46,
+    });
+    let foreground = ThemeColor::from_hex(&toml.palette.foreground).unwrap_or(ThemeColor {
+        r: 205,
+        g: 214,
+        b: 244,
+    });
 
     let mut highlights = HashMap::new();
     for (key, style) in toml.highlights {

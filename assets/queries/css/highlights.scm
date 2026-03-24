@@ -1,36 +1,76 @@
-; Comments
 (comment) @comment
 
-; Selectors
-(tag_name) @type
-(class_name) @function
-(id_name) @constant
-(universal_selector) @keyword
-(pseudo_class_selector (class_name) @keyword)
-(pseudo_element_selector (tag_name) @keyword)
-(attribute_selector (attribute_name) @attribute)
+(tag_name) @tag
+(nesting_selector) @tag
+(universal_selector) @tag
 
-; Properties
+"~" @operator
+">" @operator
+"+" @operator
+"-" @operator
+"*" @operator
+"/" @operator
+"=" @operator
+"^=" @operator
+"|=" @operator
+"~=" @operator
+"$=" @operator
+"*=" @operator
+
+"and" @operator
+"or" @operator
+"not" @operator
+"only" @operator
+
+(attribute_selector (plain_value) @string)
+
+((property_name) @variable
+ (#match? @variable "^--"))
+((plain_value) @variable
+ (#match? @variable "^--"))
+
+(class_name) @property
+(id_name) @property
+(namespace_name) @property
 (property_name) @property
 (feature_name) @property
 
-; Values
-(plain_value) @variable
-(string_value) @string
-(color_value) @constant
-(integer_value) @number
-(float_value) @float
-(unit) @keyword.type
+(pseudo_element_selector (tag_name) @attribute)
+(pseudo_class_selector (class_name) @attribute)
+(attribute_name) @attribute
 
-; Keywords
-["@media" "@keyframes" "@import" "@charset" "@namespace" "@supports"] @keyword
-["to" "not" "and" "or" "only" "selector"] @keyword
-
-; Operators
-["," ";" ":"] @punctuation.delimiter
-["{" "}"] @punctuation.bracket
-["(" ")"] @punctuation.bracket
-
-; Functions
 (function_name) @function
-(call_expression (function_name) @function)
+
+"@media" @keyword
+"@import" @keyword
+"@charset" @keyword
+"@namespace" @keyword
+"@supports" @keyword
+"@keyframes" @keyword
+(at_keyword) @keyword
+(to) @keyword
+(from) @keyword
+(important) @keyword
+
+(string_value) @string
+(color_value) @string.special
+
+(integer_value) @number
+(float_value) @number
+(unit) @type
+
+[
+  "#"
+  ","
+  "."
+  ":"
+  "::"
+  ";"
+] @punctuation.delimiter
+
+[
+  "{"
+  ")"
+  "("
+  "}"
+] @punctuation.bracket

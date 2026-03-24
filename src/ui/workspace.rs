@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::app::{App, FocusTarget};
 use crate::core::{Document, History};
-use crate::syntax::{SyntaxLayer, language_for_path};
+use crate::syntax::{language_for_path, SyntaxLayer};
 use crate::ui::{PickerItem, PickerKind, PickerState, SplitDirection};
 use crate::util::DetectedEncoding;
 
@@ -30,7 +30,11 @@ impl App {
         };
         match kind {
             PickerKind::Files => {
-                let query = self.picker.as_ref().map(|picker| picker.query()).unwrap_or_default();
+                let query = self
+                    .picker
+                    .as_ref()
+                    .map(|picker| picker.query())
+                    .unwrap_or_default();
                 let items = self.file_finder.search(query, 20);
                 if let Some(picker) = self.picker.as_mut() {
                     picker.set_file_items(items);
@@ -50,9 +54,7 @@ impl App {
         }
     }
 
-    pub(crate) fn accept_picker_selection(
-        &mut self,
-    ) -> Result<(), crate::app::AppError> {
+    pub(crate) fn accept_picker_selection(&mut self) -> Result<(), crate::app::AppError> {
         let selected = self
             .picker
             .as_ref()
@@ -128,8 +130,7 @@ impl App {
         let buffer_id = self.next_buffer_id;
         self.next_buffer_id += 1;
         let language_id = document.path().and_then(language_for_path);
-        let mut syntax = SyntaxLayer::new(language_id);
-        let _ = syntax.reparse(saved_snapshot.as_bytes());
+        let syntax = SyntaxLayer::new(language_id);
         self.buffers.push(crate::app::BufferState {
             id: buffer_id,
             document,

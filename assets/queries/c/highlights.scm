@@ -1,59 +1,81 @@
-; Comments
-(comment) @comment
-
-; Keywords
-[
-  "break" "case" "const" "continue" "default" "do" "else"
-  "enum" "extern" "for" "goto" "if" "inline" "register"
-  "restrict" "return" "sizeof" "static" "struct" "switch"
-  "typedef" "union" "volatile" "while" "_Alignas" "_Alignof"
-  "_Atomic" "_Generic" "_Noreturn"
-] @keyword
-
-["return"] @keyword.return
-["sizeof"] @keyword.operator
-
-; Strings
-(string_literal) @string
-(escape_sequence) @string.escape
-(char_literal) @string
-
-; Numbers
-(number_literal) @number
-
-; Booleans
-(true) @boolean
-(false) @boolean
-
-; Null
-(null) @constant.builtin
-
-; Operators
-[
-  "+" "-" "*" "/" "%" "++" "--"
-  "==" "!=" "<" ">" "<=" ">="
-  "=" "+=" "-=" "*=" "/=" "%="
-  "&&" "||" "!" "~" "&" "|" "^" "<<" ">>"
-  "&=" "|=" "^=" "<<=" ">>="
-  "->" "." "..." "?"
-] @operator
-
-; Punctuation
-["," ";" ":"] @punctuation.delimiter
-["(" ")" "[" "]" "{" "}"] @punctuation.bracket
-
-; Functions
-(function_definition declarator: (function_declarator declarator: (identifier) @function))
-(declaration declarator: (function_declarator declarator: (identifier) @function))
-(call_expression function: (identifier) @function)
-
-; Types
-(type_identifier) @type
-(primitive_type) @type.builtin
-
-; Variables
 (identifier) @variable
 
-; Preprocessor
-(preproc_include) @keyword.storage
-(preproc_ifdef) @keyword.storage
+((identifier) @constant
+ (#match? @constant "^[A-Z][A-Z\\d_]*$"))
+
+"break" @keyword
+"case" @keyword
+"const" @keyword
+"continue" @keyword
+"default" @keyword
+"do" @keyword
+"else" @keyword
+"enum" @keyword
+"extern" @keyword
+"for" @keyword
+"if" @keyword
+"inline" @keyword
+"return" @keyword
+"sizeof" @keyword
+"static" @keyword
+"struct" @keyword
+"switch" @keyword
+"typedef" @keyword
+"union" @keyword
+"volatile" @keyword
+"while" @keyword
+
+"#define" @keyword
+"#elif" @keyword
+"#else" @keyword
+"#endif" @keyword
+"#if" @keyword
+"#ifdef" @keyword
+"#ifndef" @keyword
+"#include" @keyword
+(preproc_directive) @keyword
+
+"--" @operator
+"-" @operator
+"-=" @operator
+"->" @operator
+"=" @operator
+"!=" @operator
+"*" @operator
+"&" @operator
+"&&" @operator
+"+" @operator
+"++" @operator
+"+=" @operator
+"<" @operator
+"==" @operator
+">" @operator
+"||" @operator
+
+"." @delimiter
+";" @delimiter
+
+(string_literal) @string
+(system_lib_string) @string
+
+(null) @constant
+(number_literal) @number
+(char_literal) @number
+
+(field_identifier) @property
+(statement_identifier) @label
+(type_identifier) @type
+(primitive_type) @type
+(sized_type_specifier) @type
+
+(call_expression
+  function: (identifier) @function)
+(call_expression
+  function: (field_expression
+    field: (field_identifier) @function))
+(function_declarator
+  declarator: (identifier) @function)
+(preproc_function_def
+  name: (identifier) @function.special)
+
+(comment) @comment

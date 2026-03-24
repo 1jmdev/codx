@@ -1,21 +1,16 @@
-; Strings
-(string) @string
-(escape_sequence) @string.escape
+(pair
+  key: (_) @string.special.key)
 
-; Numbers
+(string) @string
+
 (number) @number
 
-; Booleans
-(true) @boolean
-(false) @boolean
+[
+  (null)
+  (true)
+  (false)
+] @constant.builtin
 
-; Null
-(null) @constant.builtin
+(escape_sequence) @escape
 
-; Object keys
-(pair key: (string) @property)
-
-; Punctuation
-["," ":"] @punctuation.delimiter
-["{" "}"] @punctuation.bracket
-["[" "]"] @punctuation.bracket
+(comment) @comment
