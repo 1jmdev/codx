@@ -98,6 +98,18 @@ impl App {
                 self.set_message(&format!("Renamed to {}", path.display()), MessageKind::Info);
                 self.mode = AppMode::Editing;
             }
+            CommandBarMode::LspRename => {
+                let new_name = self.command_bar.input.trim().to_owned();
+                if !new_name.is_empty() {
+                    self.apply_lsp_rename(&new_name);
+                }
+                self.mode = AppMode::Editing;
+            }
+            CommandBarMode::WorkspaceSymbols => {
+                let query = self.command_bar.input.trim().to_owned();
+                self.open_workspace_symbols_query(&query);
+                self.mode = AppMode::Editing;
+            }
         }
 
         self.command_bar.input.clear();

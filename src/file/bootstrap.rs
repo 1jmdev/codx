@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use crate::app::{App, AppError, AppMode, BufferState, FocusTarget, MessageKind, Theme};
-use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles, load_document};
-use crate::syntax::{SyntaxLayer, language_for_path};
+use crate::file::{load_document, ExplorerState, FileFinder, FileWatcher, RecentFiles};
+use crate::lsp::LspWorkspace;
+use crate::syntax::{language_for_path, SyntaxLayer};
 use crate::util::{Clipboard, DetectedEncoding};
 use std::cell::RefCell;
 
@@ -50,7 +51,7 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
         next_buffer_id: 2,
         layout: crate::ui::LayoutState::new(1),
         explorer: ExplorerState::new(workspace_root.clone()),
-        file_finder: FileFinder::new(workspace_root),
+        file_finder: FileFinder::new(workspace_root.clone()),
         recent_files,
         watcher,
         pending_conflict_paths: Vec::new(),
@@ -64,6 +65,7 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
         message: None,
         command_bar: crate::app::CommandBarState::default(),
         active_theme,
+        lsp: LspWorkspace::new(&workspace_root),
     };
 
     if let Some(path) = app.active_document().path().map(Path::to_path_buf) {

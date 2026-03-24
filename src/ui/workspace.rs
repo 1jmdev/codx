@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::app::{App, FocusTarget};
 use crate::core::{Document, History};
-use crate::syntax::{SyntaxLayer, language_for_path};
+use crate::syntax::{language_for_path, SyntaxLayer};
 use crate::ui::{PickerItem, PickerKind, PickerState, SplitDirection};
 use crate::util::DetectedEncoding;
 
@@ -66,6 +66,14 @@ impl App {
 
         if let Some(path) = item.path {
             self.open_path_in_active_pane(&path)?;
+            if let (Some(line), Some(column)) = (item.line, item.column) {
+                let cursor = crate::core::Cursor::new(line, column);
+                if let Some(pane) = self.layout.focused_pane_mut() {
+                    pane.set_cursor(cursor);
+                    pane.set_selection(crate::core::Selection::caret(cursor));
+                }
+                self.ensure_cursor_visible();
+            }
         } else if let Some(buffer_id) = item.buffer_id {
             self.switch_to_buffer(buffer_id);
         }
@@ -189,6 +197,8 @@ impl App {
                     .unwrap_or_default(),
                 path: buffer.document.path().map(Path::to_path_buf),
                 buffer_id: Some(buffer.id),
+                line: None,
+                column: None,
             })
             .collect()
     }

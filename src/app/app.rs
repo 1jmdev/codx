@@ -5,9 +5,10 @@ use std::path::{Path, PathBuf};
 use crate::config::Theme;
 use crate::core::{Document, History};
 use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles};
+use crate::lsp::LspWorkspace;
 use crate::syntax::{
-    HighlightSpan, LanguageId, LanguageRegistry, SyntaxLayer, compute_folds,
-    markdown_code_block_spans_for_line, spans_for_line,
+    compute_folds, markdown_code_block_spans_for_line, spans_for_line, HighlightSpan, LanguageId,
+    LanguageRegistry, SyntaxLayer,
 };
 use crate::ui::{LayoutState, PickerState};
 use crate::util::{Clipboard, DetectedEncoding};
@@ -29,6 +30,8 @@ pub enum CommandBarMode {
     ExplorerCreateFile,
     ExplorerCreateDirectory,
     ExplorerRename,
+    LspRename,
+    WorkspaceSymbols,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -99,6 +102,7 @@ pub struct App {
     pub(crate) message: Option<Message>,
     pub(crate) command_bar: CommandBarState,
     pub(crate) active_theme: Theme,
+    pub(crate) lsp: LspWorkspace,
 }
 
 impl App {
@@ -142,6 +146,8 @@ impl App {
             AppMode::CommandBar(CommandBarMode::ExplorerCreateFile) => Some("New file: "),
             AppMode::CommandBar(CommandBarMode::ExplorerCreateDirectory) => Some("New dir: "),
             AppMode::CommandBar(CommandBarMode::ExplorerRename) => Some("Rename to: "),
+            AppMode::CommandBar(CommandBarMode::LspRename) => Some("Rename symbol: "),
+            AppMode::CommandBar(CommandBarMode::WorkspaceSymbols) => Some("Symbols: "),
             _ => None,
         }
     }

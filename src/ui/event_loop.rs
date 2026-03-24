@@ -114,6 +114,28 @@ impl App {
     }
 
     fn handle_editing_key(&mut self, key_event: KeyEvent) -> Result<(), AppError> {
+        if self.completion_active() {
+            match key_event.code {
+                KeyCode::Up => {
+                    self.lsp.completion.move_selection(-1);
+                    return Ok(());
+                }
+                KeyCode::Down => {
+                    self.lsp.completion.move_selection(1);
+                    return Ok(());
+                }
+                KeyCode::Enter | KeyCode::Tab => {
+                    self.accept_completion();
+                    return Ok(());
+                }
+                KeyCode::Esc => {
+                    self.close_completion();
+                    return Ok(());
+                }
+                _ => {}
+            }
+        }
+
         if let Some(command) = map_key_event(key_event) {
             self.apply_command(command)?;
             return Ok(());
@@ -122,6 +144,10 @@ impl App {
         match key_event.code {
             KeyCode::Char(ch) if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.insert_text(&ch.to_string(), true);
+                if self.focus == FocusTarget::Editor {
+                    self.trigger_completion();
+                    self.show_signature_help();
+                }
             }
             KeyCode::Enter => self.insert_newline_with_indent(),
             KeyCode::Tab => self.insert_text("    ", false),
@@ -328,6 +354,16 @@ impl App {
             Command::FocusNextPane => self.focus_next_pane(),
             Command::ResizePaneLeft => self.resize_focused_pane(-5),
             Command::ResizePaneRight => self.resize_focused_pane(5),
+            Command::TriggerCompletion => self.trigger_completion(),
+            Command::Hover => self.show_hover(),
+            Command::SignatureHelp => self.show_signature_help(),
+            Command::GotoDefinition => self.goto_definition(),
+            Command::GotoReferences => self.goto_references(),
+            Command::RenameSymbol => self.rename_symbol(),
+            Command::CodeActions => self.show_code_actions(),
+            Command::FormatDocument => self.format_document(),
+            Command::WorkspaceSymbols => self.open_workspace_symbols(),
+            Command::ToggleDiagnosticsPanel => self.toggle_diagnostics_panel(),
         }
 
         self.ensure_cursor_visible();

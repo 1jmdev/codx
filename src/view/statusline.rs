@@ -19,8 +19,19 @@ pub fn build_statusline(app: &App) -> String {
     let pane_count = app.layout.pane_ids().len();
     let encoding = app.active_buffer().encoding.label();
     let theme_name = app.active_theme_name();
+    let diagnostics = app
+        .active_document()
+        .path()
+        .map(|path| app.lsp.diagnostics_count(Some(path)))
+        .unwrap_or(0);
+    let progress = app.lsp.progress.label();
+    let progress_suffix = if progress.is_empty() {
+        String::new()
+    } else {
+        format!("  LSP {progress}")
+    };
 
     format!(
-        "{file_name}{dirty}{read_only}  Ln {line}, Col {column}  {total_lines} lines  {encoding}  {theme_name}  {pane_count} pane(s)"
+        "{file_name}{dirty}{read_only}  Ln {line}, Col {column}  {total_lines} lines  {encoding}  {theme_name}  {pane_count} pane(s)  diag:{diagnostics}{progress_suffix}"
     )
 }

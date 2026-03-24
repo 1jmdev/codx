@@ -24,6 +24,10 @@ pub fn render(frame: &mut Frame<'_>, app: &App) {
     render_statusline(frame.buffer_mut(), areas[1], app);
     render_message_or_command_bar(frame.buffer_mut(), areas[2], app);
     render_picker_overlay(frame, app);
+    render_completion_overlay(frame, app);
+    render_hover_overlay(frame, app);
+    render_signature_overlay(frame, app);
+    render_diagnostics_overlay(frame, app);
     render_delete_confirm_overlay(frame, app);
     render_external_change_conflict_overlay(frame, app);
 
@@ -536,6 +540,110 @@ fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {
         })
         .collect::<Vec<_>>();
     List::new(items).render(areas[1], frame.buffer_mut());
+}
+
+fn render_completion_overlay(frame: &mut Frame<'_>, app: &App) {
+    if !app.completion_active() {
+        return;
+    }
+    let popup = centered_rect(frame.area(), 46, 36);
+    let block = Block::default().borders(Borders::ALL).title(" Completion ");
+    let inner = block.inner(popup);
+    let rows = Layout::vertical([Constraint::Min(3), Constraint::Length(3)]).split(inner);
+    Clear.render(popup, frame.buffer_mut());
+    block.render(popup, frame.buffer_mut());
+
+    let items = app
+        .lsp
+        .completion
+        .items
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            let style = if index == app.lsp.completion.selected {
+                Palette::mocha().styles().selection
+            } else {
+                Palette::mocha().styles().editor
+            };
+            let mut text = item.label.clone();
+            if !item.detail.is_empty() {
+                text.push_str("  ");
+                text.push_str(&item.detail);
+            }
+            ListItem::new(Line::from(Span::styled(text, style)))
+        })
+        .collect::<Vec<_>>();
+    List::new(items).render(rows[0], frame.buffer_mut());
+
+    let doc = app
+        .lsp
+        .completion
+        .selected_item()
+        .map(|it| it.documentation.clone())
+        .unwrap_or_default();
+    Paragraph::new(doc).render(rows[1], frame.buffer_mut());
+}
+
+fn render_hover_overlay(frame: &mut Frame<'_>, app: &App) {
+    if !app.lsp.hover.visible {
+        return;
+    }
+    let popup = centered_rect(frame.area(), 60, 24);
+    let block = Block::default().borders(Borders::ALL).title(" Hover ");
+    let inner = block.inner(popup);
+    Clear.render(popup, frame.buffer_mut());
+    block.render(popup, frame.buffer_mut());
+    Paragraph::new(app.lsp.hover.contents.clone()).render(inner, frame.buffer_mut());
+}
+
+fn render_signature_overlay(frame: &mut Frame<'_>, app: &App) {
+    if !app.lsp.signature.visible {
+        return;
+    }
+    let popup = centered_rect(frame.area(), 56, 14);
+    let block = Block::default().borders(Borders::ALL).title(" Signature ");
+    let inner = block.inner(popup);
+    Clear.render(popup, frame.buffer_mut());
+    block.render(popup, frame.buffer_mut());
+    Paragraph::new(app.lsp.signature.label.clone()).render(inner, frame.buffer_mut());
+}
+
+fn render_diagnostics_overlay(frame: &mut Frame<'_>, app: &App) {
+    if !app.lsp.diagnostics_panel_open {
+        return;
+    }
+    let popup = centered_rect(frame.area(), 70, 40);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Diagnostics ");
+    let inner = block.inner(popup);
+    Clear.render(popup, frame.buffer_mut());
+    block.render(popup, frame.buffer_mut());
+    let lines = app
+        .active_document()
+        .path()
+        .map(|path| {
+            app.lsp
+                .diagnostics_for_path(path)
+                .iter()
+                .map(|diag| {
+                    format!(
+                        "{}:{} {:?} {}",
+                        diag.line + 1,
+                        diag.column + 1,
+                        diag.severity,
+                        diag.message
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    let content = if lines.is_empty() {
+        String::from("No diagnostics")
+    } else {
+        lines.join("\n")
+    };
+    Paragraph::new(content).render(inner, frame.buffer_mut());
 }
 
 fn screen_cursor_position(

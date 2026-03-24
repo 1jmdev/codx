@@ -1,5 +1,6 @@
 mod error;
 mod event_loop;
+mod float;
 mod layout;
 mod palette;
 mod pane;

@@ -28,12 +28,15 @@ impl App {
     }
 
     pub(crate) fn save_to_path(&mut self, path: &Path) -> Result<(), AppError> {
-        let buffer = self
-            .buffer_by_id_mut(self.active_buffer_id)
-            .ok_or_else(|| AppError::Invariant(String::from("active buffer is missing")))?;
-        crate::file::save_document(path, &buffer.document, buffer.encoding)?;
-        buffer.document.mark_saved(path.to_path_buf());
-        buffer.saved_snapshot = buffer.document.text();
+        let saved_text = {
+            let buffer = self
+                .buffer_by_id_mut(self.active_buffer_id)
+                .ok_or_else(|| AppError::Invariant(String::from("active buffer is missing")))?;
+            crate::file::save_document(path, &buffer.document, buffer.encoding)?;
+            buffer.document.mark_saved(path.to_path_buf());
+            buffer.saved_snapshot = buffer.document.text();
+            buffer.document.text()
+        };
         self.recent_files.record(path);
         self.file_finder.refresh();
         self.explorer.refresh();
@@ -43,6 +46,7 @@ impl App {
         } else {
             self.set_message(&format!("Saved {}", path.display()), MessageKind::Info);
         }
+        self.lsp.did_save(path, &saved_text, &self.workspace_root);
         self.pending_quit_after_save = false;
         Ok(())
     }
@@ -67,10 +71,17 @@ impl App {
         };
         self.switch_to_buffer(buffer_id);
         self.recent_files.record(path);
+        if let Some(text) = self
+            .buffer_by_id(buffer_id)
+            .map(|buffer| buffer.document.text())
+        {
+            self.lsp.did_open(path, &text, &self.workspace_root);
+        }
         Ok(())
     }
 
     pub(crate) fn poll_background_tasks(&mut self) {
+        self.lsp.poll_server_messages();
         let watched = match self.watcher.as_mut() {
             Some(watcher) => watcher.poll_paths(),
             None => return,

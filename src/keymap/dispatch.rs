@@ -16,6 +16,8 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
         KeyCode::End if control => Some(Command::MoveDocumentEnd { extend: false }),
         KeyCode::F(3) if extend => Some(Command::SearchPrevious),
         KeyCode::F(3) => Some(Command::SearchNext),
+        KeyCode::F(12) => Some(Command::GotoDefinition),
+        KeyCode::F(2) => Some(Command::RenameSymbol),
         KeyCode::Left if control => Some(Command::MoveWordLeft { extend }),
         KeyCode::Right if control => Some(Command::MoveWordRight { extend }),
         KeyCode::Left => Some(Command::MoveLeft { extend }),
@@ -34,7 +36,11 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
         KeyCode::Char('z') if control => Some(Command::Undo),
         KeyCode::Char('y') if control => Some(Command::Redo),
         KeyCode::Char('f') if control => Some(Command::OpenSearch),
+        KeyCode::Char(' ') if control => Some(Command::TriggerCompletion),
         KeyCode::Char('b') if control => Some(Command::ToggleExplorer),
+        KeyCode::Char('t') if control => Some(Command::WorkspaceSymbols),
+        KeyCode::Char('.') if control => Some(Command::CodeActions),
+        KeyCode::Char('K') => Some(Command::Hover),
         KeyCode::Char('p') if control => Some(Command::OpenFilePicker),
         KeyCode::Tab if control => Some(Command::OpenBufferPicker),
         KeyCode::Char('\\') if control && modifiers.contains(KeyModifiers::SHIFT) => {
@@ -52,6 +58,7 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
         KeyCode::Char('x') if control => Some(Command::CutSelection),
         KeyCode::Char('v') if control => Some(Command::Paste),
         KeyCode::Char(':') if !control => Some(Command::OpenCommandBar),
+        KeyCode::Char('d') if control => Some(Command::ToggleDiagnosticsPanel),
         _ => None,
     }
 }

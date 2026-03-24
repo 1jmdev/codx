@@ -12,6 +12,8 @@ pub struct PickerItem {
     pub subtitle: String,
     pub path: Option<std::path::PathBuf>,
     pub buffer_id: Option<u64>,
+    pub line: Option<usize>,
+    pub column: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -78,6 +80,8 @@ impl PickerState {
                 subtitle: String::new(),
                 path: Some(item.path),
                 buffer_id: None,
+                line: None,
+                column: None,
             })
             .collect();
         self.selected = self.selected.min(self.items.len().saturating_sub(1));

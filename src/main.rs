@@ -4,6 +4,7 @@ mod core;
 mod editor;
 mod file;
 mod keymap;
+mod lsp;
 mod syntax;
 mod ui;
 mod util;
