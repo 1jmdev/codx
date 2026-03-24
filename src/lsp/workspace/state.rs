@@ -93,6 +93,9 @@ impl LspWorkspace {
         let Some(language) = language_for_path(path) else {
             return Vec::new();
         };
+        if !self.progress.done {
+            return Vec::new();
+        }
         let Some(client) = self.clients.get_mut(&language) else {
             return Vec::new();
         };
@@ -140,6 +143,9 @@ fn parse_position(value: &serde_json::Value) -> (usize, usize) {
 impl LspWorkspace {
     pub fn did_open(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return;
+        }
         let Some(language) = language_for_path(path) else {
             return;
         };
@@ -163,6 +169,9 @@ impl LspWorkspace {
 
     pub fn did_change(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return;
+        }
         let Some(language) = language_for_path(path) else {
             return;
         };
@@ -188,6 +197,9 @@ impl LspWorkspace {
 
     pub fn did_save(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return;
+        }
         let Some(language) = language_for_path(path) else {
             return;
         };
@@ -212,6 +224,9 @@ impl LspWorkspace {
         character: usize,
     ) -> Option<String> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return None;
+        }
         let language = language_for_path(path)?;
         let client = self.clients.get_mut(&language)?;
         if !client.capabilities.hover {
@@ -247,6 +262,9 @@ impl LspWorkspace {
         character: usize,
     ) -> Option<(String, Option<u32>)> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return None;
+        }
         let language = language_for_path(path)?;
         let client = self.clients.get_mut(&language)?;
         if !client.capabilities.signature_help {
@@ -298,6 +316,9 @@ impl LspWorkspace {
         character: usize,
     ) -> Vec<(std::path::PathBuf, usize, usize)> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return Vec::new();
+        }
         let Some(language) = language_for_path(path) else {
             return Vec::new();
         };
@@ -412,6 +433,9 @@ impl LspWorkspace {
         text: &str,
     ) -> Option<String> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return None;
+        }
         let language = language_for_path(path)?;
         let client = self.clients.get_mut(&language)?;
         if !client.capabilities.formatting {
@@ -436,6 +460,9 @@ impl LspWorkspace {
         character: usize,
     ) -> Vec<String> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return Vec::new();
+        }
         let Some(language) = language_for_path(path) else {
             return Vec::new();
         };
@@ -482,6 +509,9 @@ impl LspWorkspace {
         new_name: &str,
     ) -> Vec<(std::path::PathBuf, String)> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return Vec::new();
+        }
         let Some(language) = language_for_path(path) else {
             return Vec::new();
         };
@@ -561,6 +591,15 @@ impl LspWorkspace {
                             continue;
                         };
                         if let Some(value) = params.get("value") {
+                            if let Some(kind) =
+                                value.get("kind").and_then(serde_json::Value::as_str)
+                            {
+                                match kind {
+                                    "begin" | "report" => self.progress.done = false,
+                                    "end" => self.progress.done = true,
+                                    _ => {}
+                                }
+                            }
                             self.progress.title = value
                                 .get("title")
                                 .and_then(serde_json::Value::as_str)
@@ -592,6 +631,9 @@ impl LspWorkspace {
         character: usize,
     ) -> Option<(std::path::PathBuf, usize, usize)> {
         self.ensure_client_for_path(path, workspace_root);
+        if !self.progress.done {
+            return None;
+        }
         let language = language_for_path(path)?;
         let client = self.clients.get_mut(&language)?;
         let runtime = self.runtime.as_mut()?;

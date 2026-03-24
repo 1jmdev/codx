@@ -1,9 +1,20 @@
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ProgressState {
     pub title: String,
     pub message: String,
     pub percentage: Option<u32>,
     pub done: bool,
+}
+
+impl Default for ProgressState {
+    fn default() -> Self {
+        Self {
+            title: String::new(),
+            message: String::new(),
+            percentage: None,
+            done: true,
+        }
+    }
 }
 
 impl ProgressState {
