@@ -62,6 +62,7 @@ impl Theme {
             "text.title" => ["special", "keyword"].as_slice(),
             "text.literal" => ["string"].as_slice(),
             "text.uri" | "text.reference" => ["special", "string"].as_slice(),
+            "text.emphasis" | "text.strong" => ["special", "keyword"].as_slice(),
             _ => &[],
         };
 

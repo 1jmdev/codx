@@ -3,7 +3,10 @@ use std::path::{Path, PathBuf};
 use crate::config::Theme;
 use crate::core::{Document, History};
 use crate::file::{ExplorerState, FileFinder, FileWatcher, RecentFiles};
-use crate::syntax::{spans_for_line, HighlightSpan, LanguageRegistry, SyntaxLayer};
+use crate::syntax::{
+    markdown_code_block_spans_for_line, spans_for_line, HighlightSpan, LanguageId,
+    LanguageRegistry, SyntaxLayer,
+};
 use crate::ui::{LayoutState, PickerState};
 use crate::util::{Clipboard, DetectedEncoding};
 
@@ -223,7 +226,16 @@ impl App {
             source_bytes.len()
         };
 
-        spans_for_line(tree, query, source_bytes, line_start, line_end)
+        let mut spans = spans_for_line(tree, query, source_bytes, line_start, line_end);
+        if lang_id == LanguageId::Markdown {
+            spans.extend(markdown_code_block_spans_for_line(
+                tree,
+                source_bytes,
+                line_start,
+                line_end,
+            ));
+        }
+        spans
     }
 
     pub fn switch_theme(&mut self, name: &str) -> bool {

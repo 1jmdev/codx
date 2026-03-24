@@ -1,6 +1,11 @@
 use tree_sitter::Tree;
 
-pub fn compute_indent(tree: Option<&Tree>, source: &[u8], cursor_byte: usize, current_indent: &str) -> String {
+pub fn compute_indent(
+    tree: Option<&Tree>,
+    source: &[u8],
+    cursor_byte: usize,
+    current_indent: &str,
+) -> String {
     let Some(tree) = tree else {
         return current_indent.to_owned();
     };
@@ -12,8 +17,7 @@ pub fn compute_indent(tree: Option<&Tree>, source: &[u8], cursor_byte: usize, cu
         return current_indent.to_owned();
     };
 
-    let should_increase = is_block_opener(node.kind())
-        || is_block_opener_byte(source, cursor_byte);
+    let should_increase = is_block_opener(node.kind()) || is_block_opener_byte(source, cursor_byte);
 
     if should_increase {
         format!("{}    ", current_indent)

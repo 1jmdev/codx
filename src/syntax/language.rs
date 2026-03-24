@@ -45,8 +45,12 @@ impl LanguageId {
     pub fn highlight_query_source(self) -> &'static str {
         match self {
             LanguageId::Rust => include_str!("../../assets/queries/rust/highlights.scm"),
-            LanguageId::JavaScript => include_str!("../../assets/queries/javascript/highlights.scm"),
-            LanguageId::TypeScript => include_str!("../../assets/queries/typescript/highlights.scm"),
+            LanguageId::JavaScript => {
+                include_str!("../../assets/queries/javascript/highlights.scm")
+            }
+            LanguageId::TypeScript => {
+                include_str!("../../assets/queries/typescript/highlights.scm")
+            }
             LanguageId::Python => include_str!("../../assets/queries/python/highlights.scm"),
             LanguageId::Go => include_str!("../../assets/queries/go/highlights.scm"),
             LanguageId::C => include_str!("../../assets/queries/c/highlights.scm"),
@@ -65,20 +69,25 @@ impl LanguageId {
 
 pub fn language_for_path(path: &Path) -> Option<LanguageId> {
     let ext = path.extension()?.to_str()?;
-    match ext {
-        "rs" => Some(LanguageId::Rust),
-        "js" | "mjs" | "cjs" => Some(LanguageId::JavaScript),
-        "ts" | "mts" | "cts" => Some(LanguageId::TypeScript),
-        "py" | "pyi" | "pyw" => Some(LanguageId::Python),
-        "go" => Some(LanguageId::Go),
+    language_for_name(ext)
+}
+
+pub fn language_for_name(name: &str) -> Option<LanguageId> {
+    let lower = name.trim().to_ascii_lowercase();
+    match lower.as_str() {
+        "rs" | "rust" => Some(LanguageId::Rust),
+        "js" | "mjs" | "cjs" | "javascript" => Some(LanguageId::JavaScript),
+        "ts" | "mts" | "cts" | "typescript" => Some(LanguageId::TypeScript),
+        "py" | "pyi" | "pyw" | "python" => Some(LanguageId::Python),
+        "go" | "golang" => Some(LanguageId::Go),
         "c" | "h" => Some(LanguageId::C),
-        "cpp" | "cxx" | "cc" | "hpp" | "hxx" | "hh" => Some(LanguageId::Cpp),
+        "cpp" | "cxx" | "cc" | "hpp" | "hxx" | "hh" | "c++" => Some(LanguageId::Cpp),
         "html" | "htm" => Some(LanguageId::Html),
         "css" => Some(LanguageId::Css),
         "json" | "jsonc" => Some(LanguageId::Json),
         "toml" => Some(LanguageId::Toml),
         "yaml" | "yml" => Some(LanguageId::Yaml),
-        "sh" | "bash" | "zsh" => Some(LanguageId::Bash),
+        "sh" | "bash" | "zsh" | "shell" => Some(LanguageId::Bash),
         "lua" => Some(LanguageId::Lua),
         "md" | "markdown" => Some(LanguageId::Markdown),
         _ => None,
