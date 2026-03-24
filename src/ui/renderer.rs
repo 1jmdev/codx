@@ -1,9 +1,9 @@
-use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Widget};
+use ratatui::Frame;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -27,7 +27,7 @@ pub fn render(frame: &mut Frame<'_>, app: &App) {
     render_delete_confirm_overlay(frame, app);
     render_external_change_conflict_overlay(frame, app);
 
-    let cursor = screen_cursor_position(app, areas[0], areas[2]);
+    let cursor = screen_cursor_position(app, frame.area(), areas[0], areas[2]);
     frame.set_cursor_position(cursor);
 }
 
@@ -538,9 +538,14 @@ fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {
     List::new(items).render(areas[1], frame.buffer_mut());
 }
 
-fn screen_cursor_position(app: &App, editor_area: Rect, message_area: Rect) -> (u16, u16) {
+fn screen_cursor_position(
+    app: &App,
+    frame_area: Rect,
+    editor_area: Rect,
+    message_area: Rect,
+) -> (u16, u16) {
     if app.picker().is_some() {
-        let popup = centered_rect(editor_area, 70, 60);
+        let popup = centered_rect(frame_area, 70, 60);
         let x = popup.x.saturating_add(
             1 + app
                 .picker()
