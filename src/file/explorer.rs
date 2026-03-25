@@ -15,6 +15,7 @@ pub struct ExplorerState {
     visible: bool,
     entries: Vec<ExplorerEntry>,
     selected: usize,
+    scroll_offset: usize,
     expanded: BTreeSet<PathBuf>,
 }
 
@@ -27,6 +28,7 @@ impl ExplorerState {
             visible: false,
             entries: Vec::new(),
             selected: 0,
+            scroll_offset: 0,
             expanded,
         };
         explorer.refresh();
@@ -50,6 +52,19 @@ impl ExplorerState {
 
     pub fn selected(&self) -> usize {
         self.selected
+    }
+
+    pub fn scroll_offset(&self) -> usize {
+        self.scroll_offset
+    }
+
+    pub fn sync_scroll(&mut self, viewport_height: usize) {
+        self.scroll_offset = compute_scroll_offset(
+            self.scroll_offset,
+            self.selected,
+            self.entries.len(),
+            viewport_height,
+        );
     }
 
     pub fn move_selection(&mut self, delta: isize) {
@@ -106,10 +121,12 @@ impl ExplorerState {
                 .position(|entry| entry.path == selected_path)
             {
                 self.selected = index;
+                self.scroll_offset = self.scroll_offset.min(self.selected);
                 return;
             }
         }
         self.selected = self.selected.min(self.entries.len().saturating_sub(1));
+        self.scroll_offset = self.scroll_offset.min(self.selected);
     }
 
     pub fn create(&mut self, relative: &str, directory: bool) -> Result<PathBuf, std::io::Error> {
@@ -192,4 +209,24 @@ impl ExplorerState {
             }
         }
     }
+}
+
+fn compute_scroll_offset(
+    current_offset: usize,
+    selected: usize,
+    total_items: usize,
+    viewport_height: usize,
+) -> usize {
+    if viewport_height == 0 || total_items == 0 {
+        return 0;
+    }
+
+    let max_offset = total_items.saturating_sub(viewport_height);
+    let mut offset = current_offset.min(max_offset);
+    if selected < offset {
+        offset = selected;
+    } else if selected >= offset + viewport_height {
+        offset = selected + 1 - viewport_height;
+    }
+    offset.min(max_offset)
 }

@@ -92,11 +92,20 @@ fn render_explorer(buffer: &mut Buffer, area: Rect, app: &App) {
     let inner = block.inner(area);
     block.render(area, buffer);
 
-    let items = app
-        .explorer()
-        .entries()
+    let viewport_height = inner.height as usize;
+    let entries = app.explorer().entries();
+    let selected = app.explorer().selected();
+    let scroll_offset = if viewport_height == 0 {
+        0
+    } else {
+        selected.saturating_sub(viewport_height.saturating_sub(1))
+    };
+
+    let items = entries
         .iter()
         .enumerate()
+        .skip(scroll_offset)
+        .take(viewport_height)
         .map(|(index, entry)| {
             let indent = "  ".repeat(entry.depth);
             let is_expanded = entry.is_dir && app.explorer().is_expanded(&entry.path);
@@ -587,10 +596,20 @@ fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {
         .style(palette.command_bar)
         .render(areas[0], frame.buffer_mut());
 
+    let viewport_height = areas[1].height as usize;
+    let selected = picker.selected();
+    let scroll_offset = if viewport_height == 0 {
+        0
+    } else {
+        selected.saturating_sub(viewport_height.saturating_sub(1))
+    };
+
     let items = picker
         .items()
         .iter()
         .enumerate()
+        .skip(scroll_offset)
+        .take(viewport_height)
         .map(|(index, item)| {
             let style = if index == picker.selected() {
                 palette.selection
