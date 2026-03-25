@@ -157,7 +157,7 @@ impl App {
                 }
             }
             KeyCode::Enter => self.insert_newline_with_indent(),
-            KeyCode::Tab => self.insert_text("    ", false),
+            KeyCode::Tab => self.insert_tab_stop(),
             KeyCode::Backspace => self.backspace(),
             KeyCode::Delete => self.delete_forward(),
             _ => {}

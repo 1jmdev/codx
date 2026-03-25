@@ -53,6 +53,16 @@ impl App {
         self.apply_edit(start, end, text, coalesce);
     }
 
+    pub(crate) fn insert_tab_stop(&mut self) {
+        const TAB_WIDTH: usize = 4;
+
+        let cursor = self.active_pane().cursor();
+        let display_col = self.active_document().display_column(cursor);
+        let spaces = TAB_WIDTH - (display_col % TAB_WIDTH);
+        let insert = " ".repeat(spaces.max(1));
+        self.insert_text(&insert, false);
+    }
+
     pub(crate) fn backspace(&mut self) {
         if let Some((start, end)) = self.active_pane().selection().normalized() {
             self.apply_edit(start, end, "", false);
