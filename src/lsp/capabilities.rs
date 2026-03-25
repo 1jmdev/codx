@@ -1,7 +1,6 @@
 use lsp_types::{
-    ClientCapabilities, CodeActionProviderCapability, DeclarationCapability,
-    HoverProviderCapability, ImplementationProviderCapability, InitializeResult, OneOf,
-    ServerCapabilities, TypeDefinitionProviderCapability,
+    ClientCapabilities, CodeActionProviderCapability, HoverProviderCapability, InitializeResult,
+    OneOf, ServerCapabilities,
 };
 
 #[derive(Debug, Clone)]
@@ -10,16 +9,11 @@ pub struct NegotiatedCapabilities {
     pub hover: bool,
     pub signature_help: bool,
     pub goto_definition: bool,
-    pub goto_declaration: bool,
-    pub goto_type_definition: bool,
-    pub goto_implementation: bool,
     pub references: bool,
     pub rename: bool,
     pub code_action: bool,
     pub formatting: bool,
-    pub range_formatting: bool,
     pub workspace_symbols: bool,
-    pub diagnostics_push: bool,
 }
 
 pub fn default_client_capabilities() -> ClientCapabilities {
@@ -165,16 +159,11 @@ pub fn negotiate(server: &InitializeResult) -> NegotiatedCapabilities {
         hover: hover_supported(capabilities),
         signature_help: capabilities.signature_help_provider.is_some(),
         goto_definition: one_of_supported(&capabilities.definition_provider),
-        goto_declaration: declaration_supported(&capabilities.declaration_provider),
-        goto_type_definition: type_definition_supported(&capabilities.type_definition_provider),
-        goto_implementation: implementation_supported(&capabilities.implementation_provider),
         references: one_of_supported(&capabilities.references_provider),
         rename: one_of_supported(&capabilities.rename_provider),
         code_action: code_action_supported(&capabilities.code_action_provider),
         formatting: one_of_supported(&capabilities.document_formatting_provider),
-        range_formatting: one_of_supported(&capabilities.document_range_formatting_provider),
         workspace_symbols: one_of_supported(&capabilities.workspace_symbol_provider),
-        diagnostics_push: true,
     }
 }
 
@@ -190,31 +179,6 @@ fn one_of_supported<T>(value: &Option<OneOf<bool, T>>) -> bool {
     match value {
         Some(OneOf::Left(enabled)) => *enabled,
         Some(OneOf::Right(_)) => true,
-        None => false,
-    }
-}
-
-fn declaration_supported(value: &Option<DeclarationCapability>) -> bool {
-    match value {
-        Some(DeclarationCapability::Simple(enabled)) => *enabled,
-        Some(DeclarationCapability::RegistrationOptions(_)) => true,
-        Some(DeclarationCapability::Options(_)) => true,
-        None => false,
-    }
-}
-
-fn type_definition_supported(value: &Option<TypeDefinitionProviderCapability>) -> bool {
-    match value {
-        Some(TypeDefinitionProviderCapability::Simple(enabled)) => *enabled,
-        Some(TypeDefinitionProviderCapability::Options(_)) => true,
-        None => false,
-    }
-}
-
-fn implementation_supported(value: &Option<ImplementationProviderCapability>) -> bool {
-    match value {
-        Some(ImplementationProviderCapability::Simple(enabled)) => *enabled,
-        Some(ImplementationProviderCapability::Options(_)) => true,
         None => false,
     }
 }

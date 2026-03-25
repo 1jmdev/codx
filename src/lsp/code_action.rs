@@ -1,9 +1,3 @@
-#[derive(Debug, Clone, Default)]
-pub struct CodeActionItem {
-    pub title: String,
-    pub kind: String,
-}
-
 use crate::app::{App, MessageKind};
 
 impl App {

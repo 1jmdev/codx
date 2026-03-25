@@ -19,6 +19,7 @@ use crate::app::{App, MessageKind};
 
 impl App {
     pub(crate) fn show_hover(&mut self) {
+        self.lsp.hover.clear();
         let Some(path) = self.active_document().path().map(|path| path.to_path_buf()) else {
             return;
         };

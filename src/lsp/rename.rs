@@ -1,8 +1,3 @@
-#[derive(Debug, Clone, Default)]
-pub struct RenameRequest {
-    pub new_name: String,
-}
-
 use crate::app::{App, MessageKind};
 
 impl App {

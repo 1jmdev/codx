@@ -56,17 +56,6 @@ impl LspWorkspace {
         self.diagnostics.for_path(path)
     }
 
-    pub fn diagnostics_all(
-        &self,
-    ) -> impl Iterator<Item = (&std::path::PathBuf, &Vec<DiagnosticItem>)> {
-        self.diagnostics.all()
-    }
-
-    pub fn diagnostics_count(&self, path: Option<&Path>) -> usize {
-        path.map(|p| self.diagnostics.for_path(p).len())
-            .unwrap_or(0)
-    }
-
     pub fn diagnostics_counts_for_path(&self, path: Option<&Path>) -> DiagnosticCounts {
         path.map(|p| self.diagnostics.counts_for_path(p))
             .unwrap_or_default()
@@ -762,15 +751,6 @@ fn parse_completion_items(value: serde_json::Value) -> Vec<CompletionItemView> {
                 .get("insertText")
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or(label);
-            let documentation = match item.get("documentation") {
-                Some(serde_json::Value::String(text)) => text.to_owned(),
-                Some(serde_json::Value::Object(object)) => object
-                    .get("value")
-                    .and_then(serde_json::Value::as_str)
-                    .unwrap_or_default()
-                    .to_owned(),
-                _ => String::new(),
-            };
             let is_snippet = item
                 .get("insertTextFormat")
                 .and_then(serde_json::Value::as_u64)
@@ -779,7 +759,6 @@ fn parse_completion_items(value: serde_json::Value) -> Vec<CompletionItemView> {
             Some(CompletionItemView {
                 label: label.to_owned(),
                 detail: detail.to_owned(),
-                documentation,
                 insert_text: insert_text.to_owned(),
                 is_snippet,
             })

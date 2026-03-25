@@ -1,12 +1,3 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GotoKind {
-    Definition,
-    Declaration,
-    TypeDefinition,
-    Implementation,
-    References,
-}
-
 use crate::app::{App, MessageKind};
 
 impl App {

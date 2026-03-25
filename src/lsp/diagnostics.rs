@@ -63,10 +63,6 @@ impl DiagnosticStore {
         self.by_path.get(path).map(Vec::as_slice).unwrap_or(&[])
     }
 
-    pub fn all(&self) -> impl Iterator<Item = (&PathBuf, &Vec<DiagnosticItem>)> {
-        self.by_path.iter()
-    }
-
     pub fn counts_for_path(&self, path: &Path) -> DiagnosticCounts {
         let mut counts = DiagnosticCounts::default();
         if let Some(items) = self.by_path.get(path) {
@@ -80,10 +76,6 @@ impl DiagnosticStore {
             }
         }
         counts
-    }
-
-    pub fn clear_path(&mut self, path: &Path) {
-        self.by_path.remove(path);
     }
 }
 

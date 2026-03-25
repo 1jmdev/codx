@@ -17,6 +17,7 @@ use crate::app::{App, MessageKind};
 
 impl App {
     pub(crate) fn show_signature_help(&mut self) {
+        self.lsp.signature.clear();
         let Some(path) = self.active_document().path().map(|path| path.to_path_buf()) else {
             return;
         };

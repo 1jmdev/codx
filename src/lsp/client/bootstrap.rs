@@ -47,15 +47,10 @@ fn default_capabilities() -> NegotiatedCapabilities {
         hover: false,
         signature_help: false,
         goto_definition: false,
-        goto_declaration: false,
-        goto_type_definition: false,
-        goto_implementation: false,
         references: false,
         rename: false,
         code_action: false,
         formatting: false,
-        range_formatting: false,
         workspace_symbols: false,
-        diagnostics_push: false,
     }
 }

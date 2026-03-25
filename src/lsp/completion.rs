@@ -2,7 +2,6 @@
 pub struct CompletionItemView {
     pub label: String,
     pub detail: String,
-    pub documentation: String,
     pub insert_text: String,
     pub is_snippet: bool,
 }

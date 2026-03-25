@@ -1,9 +1,3 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FormatTarget {
-    Document,
-    Selection,
-}
-
 use crate::app::{App, MessageKind};
 
 impl App {
