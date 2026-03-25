@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use globset::{Glob, GlobSet, GlobSetBuilder};
 use ignore::WalkBuilder;
 use nucleo::pattern::{CaseMatching, Normalization, Pattern};
 use nucleo::{Config, Matcher, Utf32String};
@@ -65,9 +64,8 @@ impl FileFinder {
 }
 
 fn collect_files(root: &Path) -> Vec<FinderItem> {
-    let ignore_set = ignored_paths();
     WalkBuilder::new(root)
-        .hidden(false)
+        .hidden(true)
         .git_ignore(true)
         .git_exclude(true)
         .parents(true)
@@ -75,29 +73,12 @@ fn collect_files(root: &Path) -> Vec<FinderItem> {
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_some_and(|kind| kind.is_file()))
         .filter_map(|entry| {
-            let relative = entry.path().strip_prefix(root).ok()?.to_path_buf();
-            if ignore_set.is_match(&relative) {
-                return None;
-            }
-
+            let path = entry.into_path();
+            let relative = path.strip_prefix(root).ok()?.to_path_buf();
             Some(FinderItem {
                 display: relative.display().to_string(),
-                path: entry.into_path(),
+                path,
             })
         })
         .collect()
-}
-
-fn ignored_paths() -> GlobSet {
-    let mut builder = GlobSetBuilder::new();
-    for pattern in ["target/**", ".git/**"] {
-        if let Ok(glob) = Glob::new(pattern) {
-            builder.add(glob);
-        }
-    }
-    builder.build().unwrap_or_else(|_| {
-        GlobSetBuilder::new()
-            .build()
-            .unwrap_or_else(|_| unreachable!())
-    })
 }

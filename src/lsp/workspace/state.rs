@@ -11,6 +11,7 @@ use crate::lsp::hover::HoverView;
 use crate::lsp::progress::ProgressState;
 use crate::lsp::signature::SignatureHelpView;
 use crate::lsp::workspace::config::load_server_config;
+use crate::lsp::workspace::discovery::WorkspaceDiscovery;
 use crate::syntax::{language_for_path, LanguageId};
 use crate::ui::{PickerItem, PickerState};
 
@@ -21,6 +22,8 @@ pub struct LspWorkspace {
     servers: HashMap<LanguageId, crate::lsp::client::ServerConfig>,
     open_versions: HashMap<std::path::PathBuf, i32>,
     diagnostics: DiagnosticStore,
+    discovery: WorkspaceDiscovery,
+    workspace_bootstrapped: bool,
     pub completion: CompletionContext,
     pub hover: HoverView,
     pub signature: SignatureHelpView,
@@ -32,12 +35,15 @@ impl LspWorkspace {
     pub fn new(workspace_root: &Path) -> Self {
         let runtime = Builder::new_current_thread().enable_all().build().ok();
         let servers = load_server_config(workspace_root);
+        let discovery = WorkspaceDiscovery::discover(workspace_root);
         Self {
             runtime,
             clients: HashMap::new(),
             servers,
             open_versions: HashMap::new(),
             diagnostics: DiagnosticStore::default(),
+            discovery,
+            workspace_bootstrapped: false,
             completion: CompletionContext::default(),
             hover: HoverView::default(),
             signature: SignatureHelpView::default(),
@@ -48,6 +54,12 @@ impl LspWorkspace {
 
     pub fn diagnostics_for_path(&self, path: &Path) -> &[DiagnosticItem] {
         self.diagnostics.for_path(path)
+    }
+
+    pub fn diagnostics_all(
+        &self,
+    ) -> impl Iterator<Item = (&std::path::PathBuf, &Vec<DiagnosticItem>)> {
+        self.diagnostics.all()
     }
 
     pub fn diagnostics_count(&self, path: Option<&Path>) -> usize {
@@ -68,6 +80,21 @@ impl LspWorkspace {
         let Some(language) = language_for_path(path) else {
             return;
         };
+        self.ensure_client_for_language(language, workspace_root);
+    }
+
+    pub fn bootstrap_workspace(&mut self, workspace_root: &Path) {
+        if self.workspace_bootstrapped {
+            return;
+        }
+        self.discovery = WorkspaceDiscovery::discover(workspace_root);
+        for language in self.discovery.languages.clone() {
+            self.ensure_client_for_language(language, workspace_root);
+        }
+        self.workspace_bootstrapped = true;
+    }
+
+    fn ensure_client_for_language(&mut self, language: LanguageId, workspace_root: &Path) {
         if self.clients.contains_key(&language) {
             return;
         }
@@ -89,6 +116,7 @@ impl LspWorkspace {
         line: usize,
         character: usize,
     ) -> Vec<CompletionItemView> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         let Some(language) = language_for_path(path) else {
             return Vec::new();
@@ -142,6 +170,7 @@ fn parse_position(value: &serde_json::Value) -> (usize, usize) {
 
 impl LspWorkspace {
     pub fn did_open(&mut self, path: &Path, text: &str, workspace_root: &Path) {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return;
@@ -168,6 +197,7 @@ impl LspWorkspace {
     }
 
     pub fn did_change(&mut self, path: &Path, text: &str, workspace_root: &Path) {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return;
@@ -196,6 +226,7 @@ impl LspWorkspace {
     }
 
     pub fn did_save(&mut self, path: &Path, text: &str, workspace_root: &Path) {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return;
@@ -223,6 +254,7 @@ impl LspWorkspace {
         line: usize,
         character: usize,
     ) -> Option<String> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return None;
@@ -261,6 +293,7 @@ impl LspWorkspace {
         line: usize,
         character: usize,
     ) -> Option<(String, Option<u32>)> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return None;
@@ -299,8 +332,13 @@ impl LspWorkspace {
         line: usize,
         character: usize,
     ) -> Option<(std::path::PathBuf, usize, usize)> {
+        let supported = language_for_path(path)
+            .and_then(|language| self.clients.get(&language))
+            .map(|client| client.capabilities.goto_definition)
+            .unwrap_or(true);
         self.goto_request(
             "textDocument/definition",
+            supported,
             path,
             workspace_root,
             line,
@@ -315,6 +353,7 @@ impl LspWorkspace {
         line: usize,
         character: usize,
     ) -> Vec<(std::path::PathBuf, usize, usize)> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return Vec::new();
@@ -357,19 +396,10 @@ impl LspWorkspace {
     }
 
     pub fn workspace_symbols(&mut self, query: &str, workspace_root: &Path) -> Vec<PickerItem> {
-        let Some(language) = self
-            .clients
-            .keys()
-            .next()
-            .copied()
-            .or(Some(LanguageId::Rust))
-        else {
+        self.bootstrap_workspace(workspace_root);
+        let Some(language) = self.clients.keys().next().copied() else {
             return Vec::new();
         };
-        if !self.clients.contains_key(&language) {
-            let fake = workspace_root.join("src").join("main.rs");
-            self.ensure_client_for_path(&fake, workspace_root);
-        }
         let Some(client) = self.clients.get_mut(&language) else {
             return Vec::new();
         };
@@ -432,6 +462,7 @@ impl LspWorkspace {
         workspace_root: &Path,
         text: &str,
     ) -> Option<String> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return None;
@@ -459,6 +490,7 @@ impl LspWorkspace {
         line: usize,
         character: usize,
     ) -> Vec<String> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return Vec::new();
@@ -508,6 +540,7 @@ impl LspWorkspace {
         character: usize,
         new_name: &str,
     ) -> Vec<(std::path::PathBuf, String)> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return Vec::new();
@@ -625,17 +658,22 @@ impl LspWorkspace {
     fn goto_request(
         &mut self,
         method: &str,
+        capability_supported: bool,
         path: &Path,
         workspace_root: &Path,
         line: usize,
         character: usize,
     ) -> Option<(std::path::PathBuf, usize, usize)> {
+        self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         if !self.progress.done {
             return None;
         }
         let language = language_for_path(path)?;
         let client = self.clients.get_mut(&language)?;
+        if !capability_supported {
+            return None;
+        }
         let runtime = self.runtime.as_mut()?;
         let params = serde_json::json!({
             "textDocument": { "uri": file_uri(path) },

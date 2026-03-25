@@ -79,6 +79,8 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
         );
     }
 
+    app.lsp.bootstrap_workspace(&workspace_root);
+
     Ok(app)
 }
 
