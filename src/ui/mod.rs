@@ -1,6 +1,5 @@
 mod error;
 mod event_loop;
-mod float;
 mod layout;
 mod palette;
 mod pane;
@@ -13,8 +12,7 @@ mod workspace;
 pub use error::UiError;
 pub(crate) use event_loop::run_app;
 pub use layout::LayoutState;
-#[allow(unused_imports)]
-pub use palette::{Palette, PaletteStyles};
+pub use palette::Palette;
 pub use pane::Pane;
 pub use picker::{PickerItem, PickerKind, PickerState};
 pub use renderer::render;
