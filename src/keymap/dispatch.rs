@@ -32,6 +32,12 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
         KeyCode::Char('e') if control => Some(Command::MoveLineEnd { extend: false }),
         KeyCode::Char('k') if control => Some(Command::DeleteToEndOfLine),
         KeyCode::Backspace if control => Some(Command::DeleteWordBackward),
+        KeyCode::Backspace if modifiers.contains(KeyModifiers::ALT) => {
+            Some(Command::DeleteWordBackward)
+        }
+        KeyCode::Char('h') if control => Some(Command::DeleteWordBackward),
+        KeyCode::Char('\u{8}') if control => Some(Command::DeleteWordBackward),
+        KeyCode::Char('\u{7f}') if control => Some(Command::DeleteWordBackward),
         KeyCode::Char('q') if control => Some(Command::Quit),
         KeyCode::Char('z') if control => Some(Command::Undo),
         KeyCode::Char('y') if control => Some(Command::Redo),
@@ -47,7 +53,9 @@ pub fn map_key_event(key_event: KeyEvent) -> Option<Command> {
             Some(Command::SplitHorizontal)
         }
         KeyCode::Char('\\') if control => Some(Command::SplitVertical),
-        KeyCode::Char('w') if control => Some(Command::FocusNextPane),
+        // Some terminals encode Ctrl+Backspace as Ctrl+W (ETB).
+        KeyCode::Char('w') if control => Some(Command::DeleteWordBackward),
+        KeyCode::Char('w') if modifiers.contains(KeyModifiers::ALT) => Some(Command::FocusNextPane),
         KeyCode::Char('g') if control => Some(Command::SearchPrevious),
         KeyCode::Char('S') if control => Some(Command::SaveAs),
         KeyCode::Char('s') if control && modifiers.contains(KeyModifiers::SHIFT) => {
