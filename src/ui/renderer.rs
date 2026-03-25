@@ -94,12 +94,7 @@ fn render_explorer(buffer: &mut Buffer, area: Rect, app: &App) {
 
     let viewport_height = inner.height as usize;
     let entries = app.explorer().entries();
-    let selected = app.explorer().selected();
-    let scroll_offset = if viewport_height == 0 {
-        0
-    } else {
-        selected.saturating_sub(viewport_height.saturating_sub(1))
-    };
+    let scroll_offset = app.explorer().scroll_offset();
 
     let items = entries
         .iter()
@@ -597,12 +592,7 @@ fn render_picker_overlay(frame: &mut Frame<'_>, app: &App) {
         .render(areas[0], frame.buffer_mut());
 
     let viewport_height = areas[1].height as usize;
-    let selected = picker.selected();
-    let scroll_offset = if viewport_height == 0 {
-        0
-    } else {
-        selected.saturating_sub(viewport_height.saturating_sub(1))
-    };
+    let scroll_offset = picker.scroll_offset();
 
     let items = picker
         .items()

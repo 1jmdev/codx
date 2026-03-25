@@ -1,4 +1,5 @@
 use crate::file::FinderItem;
+use crate::util::compute_scroll_offset;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PickerKind {
@@ -22,6 +23,7 @@ pub struct PickerState {
     query: String,
     items: Vec<PickerItem>,
     selected: usize,
+    scroll_offset: usize,
 }
 
 impl PickerState {
@@ -31,6 +33,7 @@ impl PickerState {
             query: String::new(),
             items: Vec::new(),
             selected: 0,
+            scroll_offset: 0,
         }
     }
 
@@ -45,6 +48,7 @@ impl PickerState {
     pub fn set_query(&mut self, query: String) {
         self.query = query;
         self.selected = 0;
+        self.scroll_offset = 0;
     }
 
     pub fn items(&self) -> &[PickerItem] {
@@ -55,9 +59,41 @@ impl PickerState {
         self.selected
     }
 
+    pub fn set_selected(&mut self, selected: usize) {
+        self.selected = selected.min(self.items.len().saturating_sub(1));
+    }
+
+    pub fn scroll_offset(&self) -> usize {
+        self.scroll_offset
+    }
+
+    pub fn sync_scroll(&mut self, viewport_height: usize) {
+        self.scroll_offset = compute_scroll_offset(
+            self.scroll_offset,
+            self.selected,
+            self.items.len(),
+            viewport_height,
+        );
+    }
+
+    pub fn scroll_by(&mut self, delta: isize, viewport_height: usize) {
+        if self.items.is_empty() || viewport_height == 0 {
+            self.scroll_offset = 0;
+            return;
+        }
+
+        let max_offset = self.items.len().saturating_sub(viewport_height);
+        self.scroll_offset = if delta.is_negative() {
+            self.scroll_offset.saturating_sub(delta.unsigned_abs())
+        } else {
+            (self.scroll_offset + delta as usize).min(max_offset)
+        };
+    }
+
     pub fn move_selection(&mut self, delta: isize) {
         if self.items.is_empty() {
             self.selected = 0;
+            self.scroll_offset = 0;
             return;
         }
         let max_index = self.items.len().saturating_sub(1);
@@ -85,10 +121,12 @@ impl PickerState {
             })
             .collect();
         self.selected = self.selected.min(self.items.len().saturating_sub(1));
+        self.scroll_offset = self.scroll_offset.min(self.selected);
     }
 
     pub fn set_buffer_items(&mut self, items: Vec<PickerItem>) {
         self.items = items;
         self.selected = self.selected.min(self.items.len().saturating_sub(1));
+        self.scroll_offset = self.scroll_offset.min(self.selected);
     }
 }

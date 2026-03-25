@@ -37,6 +37,14 @@ impl Viewport {
         self.size = size;
     }
 
+    pub fn terminal_size(&self) -> Size {
+        self.size
+    }
+
+    pub fn set_top_line(&mut self, top_line: usize) {
+        self.top_line = top_line;
+    }
+
     pub fn text_height(&self) -> usize {
         self.size
             .height
@@ -70,6 +78,32 @@ impl Viewport {
             self.left_column = display_column;
         } else if display_column >= self.left_column + text_width {
             self.left_column = display_column.saturating_sub(text_width.saturating_sub(1));
+        }
+
+        let max_top = line_count.saturating_sub(text_height);
+        if self.top_line > max_top {
+            self.top_line = max_top;
+        }
+    }
+
+    pub fn ensure_cursor_visible_minimal(
+        &mut self,
+        cursor: Cursor,
+        display_column: usize,
+        line_count: usize,
+        text_height: usize,
+        text_width: usize,
+    ) {
+        if cursor.line < self.top_line {
+            self.top_line = cursor.line;
+        } else if cursor.line >= self.top_line + text_height {
+            self.top_line = (cursor.line + 1).saturating_sub(text_height);
+        }
+
+        if display_column < self.left_column {
+            self.left_column = display_column;
+        } else if display_column >= self.left_column + text_width {
+            self.left_column = (display_column + 1).saturating_sub(text_width);
         }
 
         let max_top = line_count.saturating_sub(text_height);

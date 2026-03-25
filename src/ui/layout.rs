@@ -65,6 +65,12 @@ impl LayoutState {
         self.focused_pane_id = ids[(index + 1) % ids.len()];
     }
 
+    pub fn focus_pane(&mut self, pane_id: u64) {
+        if self.root.pane(pane_id).is_some() {
+            self.focused_pane_id = pane_id;
+        }
+    }
+
     pub fn resize_focused(&mut self, delta: i16) {
         let _ = self.root.resize_split(self.focused_pane_id, delta);
     }

@@ -1,6 +1,7 @@
 mod error;
 mod event_loop;
 mod layout;
+mod mouse;
 mod palette;
 mod pane;
 mod picker;
@@ -11,6 +12,7 @@ mod workspace;
 
 pub use error::UiError;
 pub(crate) use event_loop::run_app;
+pub(crate) use mouse::handle_mouse_event;
 pub use layout::LayoutState;
 pub use palette::Palette;
 pub use pane::Pane;

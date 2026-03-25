@@ -32,9 +32,9 @@ impl FileFinder {
         self.files = collect_files(&self.root);
     }
 
-    pub fn search(&mut self, query: &str, limit: usize) -> Vec<FinderItem> {
+    pub fn search(&mut self, query: &str) -> Vec<FinderItem> {
         if query.trim().is_empty() {
-            return self.files.iter().take(limit).cloned().collect();
+            return self.files.clone();
         }
 
         let pattern = Pattern::parse(query, CaseMatching::Smart, Normalization::Smart);
@@ -55,11 +55,7 @@ impl FileFinder {
                 .cmp(&left.0)
                 .then_with(|| left.1.display.cmp(&right.1.display))
         });
-        scored
-            .into_iter()
-            .take(limit)
-            .map(|(_, item)| item)
-            .collect()
+        scored.into_iter().map(|(_, item)| item).collect()
     }
 }
 

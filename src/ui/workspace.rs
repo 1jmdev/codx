@@ -36,7 +36,7 @@ impl App {
                     .as_ref()
                     .map(|picker| picker.query())
                     .unwrap_or_default();
-                let items = self.file_finder.search(query, 20);
+                let items = self.file_finder.search(query);
                 if let Some(picker) = self.picker.as_mut() {
                     picker.set_file_items(items);
                 }

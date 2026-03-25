@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent};
 use ratatui::layout::Size;
 
 use crate::app::{App, AppError, AppMode, CommandBarMode, FocusTarget};
@@ -40,6 +40,9 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
                         app.set_terminal_size(Size::new(width, height));
                         app.ensure_cursor_visible();
                     }
+                    Event::Mouse(mouse_event) => {
+                        app.handle_mouse_event(mouse_event)?;
+                    }
                     _ => {}
                 }
 
@@ -53,6 +56,10 @@ pub(crate) fn run_app(app: &mut App) -> Result<(), AppError> {
 }
 
 impl App {
+    pub(crate) fn handle_mouse_event(&mut self, mouse_event: MouseEvent) -> Result<(), AppError> {
+        crate::ui::handle_mouse_event(self, mouse_event)
+    }
+
     pub(crate) fn handle_paste_text(&mut self, text: &str) {
         let normalized = text.replace("\r\n", "\n").replace('\r', "\n");
 
@@ -167,8 +174,14 @@ impl App {
             KeyCode::Char('b') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.apply_command(crate::editor::Command::ToggleExplorer)?;
             }
-            KeyCode::Up => self.explorer.move_selection(-1),
-            KeyCode::Down => self.explorer.move_selection(1),
+            KeyCode::Up => {
+                self.explorer.move_selection(-1);
+                self.ensure_explorer_selection_visible();
+            }
+            KeyCode::Down => {
+                self.explorer.move_selection(1);
+                self.ensure_explorer_selection_visible();
+            }
             KeyCode::Left | KeyCode::Right => self.explorer.toggle_selected_expansion(),
             KeyCode::Enter => self.open_selected_explorer_entry()?,
             KeyCode::Char('a') if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -246,11 +259,13 @@ impl App {
                 if let Some(picker) = self.picker.as_mut() {
                     picker.move_selection(-1);
                 }
+                self.ensure_picker_selection_visible();
             }
             KeyCode::Down => {
                 if let Some(picker) = self.picker.as_mut() {
                     picker.move_selection(1);
                 }
+                self.ensure_picker_selection_visible();
             }
             KeyCode::Backspace => {
                 if let Some(picker) = self.picker.as_mut() {

@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::util::compute_scroll_offset;
+
 #[derive(Debug, Clone)]
 pub struct ExplorerEntry {
     pub path: PathBuf,
@@ -54,6 +56,10 @@ impl ExplorerState {
         self.selected
     }
 
+    pub fn set_selected(&mut self, selected: usize) {
+        self.selected = selected.min(self.entries.len().saturating_sub(1));
+    }
+
     pub fn scroll_offset(&self) -> usize {
         self.scroll_offset
     }
@@ -65,6 +71,20 @@ impl ExplorerState {
             self.entries.len(),
             viewport_height,
         );
+    }
+
+    pub fn scroll_by(&mut self, delta: isize, viewport_height: usize) {
+        if self.entries.is_empty() || viewport_height == 0 {
+            self.scroll_offset = 0;
+            return;
+        }
+
+        let max_offset = self.entries.len().saturating_sub(viewport_height);
+        self.scroll_offset = if delta.is_negative() {
+            self.scroll_offset.saturating_sub(delta.unsigned_abs())
+        } else {
+            (self.scroll_offset + delta as usize).min(max_offset)
+        };
     }
 
     pub fn move_selection(&mut self, delta: isize) {
@@ -79,6 +99,8 @@ impl ExplorerState {
         } else {
             (self.selected + delta as usize).min(max_index)
         };
+        self.scroll_offset =
+            compute_scroll_offset(self.scroll_offset, self.selected, self.entries.len(), 1)
     }
 
     pub fn selected_entry(&self) -> Option<&ExplorerEntry> {
@@ -209,24 +231,4 @@ impl ExplorerState {
             }
         }
     }
-}
-
-fn compute_scroll_offset(
-    current_offset: usize,
-    selected: usize,
-    total_items: usize,
-    viewport_height: usize,
-) -> usize {
-    if viewport_height == 0 || total_items == 0 {
-        return 0;
-    }
-
-    let max_offset = total_items.saturating_sub(viewport_height);
-    let mut offset = current_offset.min(max_offset);
-    if selected < offset {
-        offset = selected;
-    } else if selected >= offset + viewport_height {
-        offset = selected + 1 - viewport_height;
-    }
-    offset.min(max_offset)
 }
