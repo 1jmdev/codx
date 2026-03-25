@@ -8,3 +8,11 @@ pub fn build_request(id: u64, method: &str, params: Value) -> Value {
         "params": params
     })
 }
+
+pub fn build_response(id: u64, result: Value) -> Value {
+    serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "result": result
+    })
+}

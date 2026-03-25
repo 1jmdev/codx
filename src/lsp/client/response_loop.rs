@@ -9,6 +9,7 @@ use crate::lsp::client::RpcResponse;
 
 pub(super) enum IncomingMessage {
     Notification(Value),
+    ServerRequest(Value),
     Response(RpcResponse),
 }
 
@@ -20,6 +21,11 @@ pub(super) fn spawn_response_loop(stdout: ChildStdout) -> Receiver<IncomingMessa
             let Some(payload) = message else {
                 break;
             };
+
+            if payload.get("method").is_some() && payload.get("id").is_some() {
+                let _ = tx.send(IncomingMessage::ServerRequest(payload));
+                continue;
+            }
 
             if payload.get("method").is_some() {
                 let _ = tx.send(IncomingMessage::Notification(payload));

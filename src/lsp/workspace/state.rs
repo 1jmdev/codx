@@ -126,6 +126,7 @@ impl LspWorkspace {
         workspace_root: &Path,
         line: usize,
         character: usize,
+        trigger: Option<char>,
     ) {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
@@ -142,10 +143,12 @@ impl LspWorkspace {
             return;
         }
 
+        let context =
+            completion_context(trigger, &client.capabilities.completion_trigger_characters);
         let params = serde_json::json!({
             "textDocument": { "uri": file_uri(path) },
             "position": { "line": line, "character": character },
-            "context": { "triggerKind": 1 }
+            "context": context
         });
 
         let Ok(request_id) = client.send_request("textDocument/completion", params) else {
@@ -222,6 +225,10 @@ impl LspWorkspace {
     }
 
     pub fn did_change(&mut self, path: &Path, text: &str, workspace_root: &Path) {
+        if !self.open_versions.contains_key(path) {
+            self.did_open(path, text, workspace_root);
+            return;
+        }
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
         let Some(language) = language_for_path(path) else {
@@ -851,6 +858,21 @@ fn parse_signature_help(value: &serde_json::Value) -> Option<(String, Option<u32
         .and_then(serde_json::Value::as_u64)
         .map(|value| value as u32);
     Some((label, active_parameter))
+}
+
+fn completion_context(trigger: Option<char>, trigger_characters: &[String]) -> serde_json::Value {
+    let Some(trigger) = trigger else {
+        return serde_json::json!({ "triggerKind": 1 });
+    };
+    let trigger_text = trigger.to_string();
+    if trigger_characters.iter().any(|item| item == &trigger_text) {
+        serde_json::json!({
+            "triggerKind": 2,
+            "triggerCharacter": trigger_text
+        })
+    } else {
+        serde_json::json!({ "triggerKind": 1 })
+    }
 }
 
 fn parse_completion_items(value: serde_json::Value) -> Vec<CompletionItemView> {

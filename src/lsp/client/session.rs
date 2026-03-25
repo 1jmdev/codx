@@ -97,6 +97,9 @@ impl LspClient {
                 IncomingMessage::Notification(notification) => {
                     self.queued_notifications.push(notification);
                 }
+                IncomingMessage::ServerRequest(request) => {
+                    self.respond_to_server_request(request)?;
+                }
                 IncomingMessage::Response(response) => {
                     if response.id == id {
                         return response.into_result(method);
@@ -139,11 +142,47 @@ impl LspClient {
                 IncomingMessage::Notification(notification) => {
                     self.queued_notifications.push(notification);
                 }
+                IncomingMessage::ServerRequest(request) => {
+                    let _ = self.respond_to_server_request(request);
+                }
                 IncomingMessage::Response(response) => {
                     self.queued_responses.insert(response.id, response);
                 }
             }
         }
+    }
+
+    fn respond_to_server_request(&mut self, request: Value) -> Result<(), String> {
+        let Some(id) = request.get("id").and_then(Value::as_u64) else {
+            return Ok(());
+        };
+        let method = request
+            .get("method")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let result = match method {
+            "workspace/configuration" => configuration_response(
+                request.get("params"),
+                self.initialization_options.as_ref(),
+            ),
+            "workspace/workspaceFolders" => serde_json::json!([
+                {
+                    "uri": file_uri(&self.root_path),
+                    "name": self
+                        .root_path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or("workspace")
+                }
+            ]),
+            "window/workDoneProgress/create"
+            | "client/registerCapability"
+            | "client/unregisterCapability" => Value::Null,
+            _ => Value::Null,
+        };
+        let payload = super::requests::build_response(id, result);
+        self.write_jsonrpc(&payload.to_string())
+            .map_err(|error| format!("write response failed: {error}"))
     }
 
     fn write_jsonrpc(&mut self, payload: &str) -> io::Result<()> {
@@ -159,6 +198,21 @@ impl LspClient {
             )
         })
     }
+}
+
+fn configuration_response(params: Option<&Value>, options: Option<&Value>) -> Value {
+    let Some(items) = params
+        .and_then(|params| params.get("items"))
+        .and_then(Value::as_array)
+    else {
+        return Value::Array(Vec::new());
+    };
+
+    let values = items
+        .iter()
+        .map(|_| options.cloned().unwrap_or_else(|| serde_json::json!({})))
+        .collect::<Vec<_>>();
+    Value::Array(values)
 }
 
 impl Drop for LspClient {

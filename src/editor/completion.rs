@@ -2,13 +2,18 @@ use crate::app::App;
 use crate::core::Cursor;
 
 impl App {
-    pub(crate) fn trigger_completion(&mut self) {
+    pub(crate) fn trigger_completion(&mut self, trigger: Option<char>) {
         let Some(path) = self.active_document().path().map(|path| path.to_path_buf()) else {
             return;
         };
         let cursor = self.active_pane().cursor();
-        self.lsp
-            .request_completion(&path, &self.workspace_root, cursor.line, cursor.column);
+        self.lsp.request_completion(
+            &path,
+            &self.workspace_root,
+            cursor.line,
+            cursor.column,
+            trigger,
+        );
     }
 
     pub(crate) fn accept_completion(&mut self) {

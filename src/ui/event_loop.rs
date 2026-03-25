@@ -152,7 +152,7 @@ impl App {
             KeyCode::Char(ch) if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.handle_editor_char_input(ch);
                 if self.focus == FocusTarget::Editor {
-                    self.trigger_completion();
+                    self.trigger_completion(Some(ch));
                     self.show_signature_help();
                 }
             }
@@ -369,7 +369,7 @@ impl App {
             Command::FocusNextPane => self.focus_next_pane(),
             Command::ResizePaneLeft => self.resize_focused_pane(-5),
             Command::ResizePaneRight => self.resize_focused_pane(5),
-            Command::TriggerCompletion => self.trigger_completion(),
+            Command::TriggerCompletion => self.trigger_completion(None),
             Command::Hover => self.show_hover(),
             Command::SignatureHelp => self.show_signature_help(),
             Command::GotoDefinition => self.goto_definition(),

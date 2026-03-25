@@ -6,6 +6,7 @@ use lsp_types::{
 #[derive(Debug, Clone)]
 pub struct NegotiatedCapabilities {
     pub completion: bool,
+    pub completion_trigger_characters: Vec<String>,
     pub hover: bool,
     pub signature_help: bool,
     pub goto_definition: bool,
@@ -156,6 +157,7 @@ pub fn negotiate(server: &InitializeResult) -> NegotiatedCapabilities {
     let capabilities = &server.capabilities;
     NegotiatedCapabilities {
         completion: capabilities.completion_provider.is_some(),
+        completion_trigger_characters: completion_trigger_characters(capabilities),
         hover: hover_supported(capabilities),
         signature_help: capabilities.signature_help_provider.is_some(),
         goto_definition: one_of_supported(&capabilities.definition_provider),
@@ -165,6 +167,14 @@ pub fn negotiate(server: &InitializeResult) -> NegotiatedCapabilities {
         formatting: one_of_supported(&capabilities.document_formatting_provider),
         workspace_symbols: one_of_supported(&capabilities.workspace_symbol_provider),
     }
+}
+
+fn completion_trigger_characters(capabilities: &ServerCapabilities) -> Vec<String> {
+    capabilities
+        .completion_provider
+        .as_ref()
+        .map(|provider| provider.trigger_characters.clone().unwrap_or_default())
+        .unwrap_or_default()
 }
 
 fn hover_supported(capabilities: &ServerCapabilities) -> bool {

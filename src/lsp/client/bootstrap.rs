@@ -40,13 +40,14 @@ pub(super) fn launch_client(config: &ServerConfig, root_path: &Path) -> Result<L
         receiver,
         queued_notifications: Vec::new(),
         queued_responses: HashMap::new(),
-        next_request_id: 1,
+        next_request_id: 1_000_000,
     })
 }
 
 fn default_capabilities() -> NegotiatedCapabilities {
     NegotiatedCapabilities {
         completion: false,
+        completion_trigger_characters: Vec::new(),
         hover: false,
         signature_help: false,
         goto_definition: false,

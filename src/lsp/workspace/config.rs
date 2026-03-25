@@ -106,8 +106,8 @@ fn default_servers() -> HashMap<LanguageId, ServerConfig> {
         LanguageId::Python,
         ServerConfig {
             language_id: String::from("python"),
-            command: String::from("pyright-langserver"),
-            args: vec![String::from("--stdio")],
+            command: String::from("pylsp"),
+            args: Vec::new(),
             initialization_options: None,
         },
     );

@@ -84,6 +84,11 @@ pub(crate) fn open_app(path: Option<PathBuf>) -> Result<App, AppError> {
 
     app.lsp.bootstrap_workspace(&workspace_root);
 
+    if let Some(path) = app.active_document().path().map(Path::to_path_buf) {
+        let text = app.active_document().text();
+        app.lsp.did_open(&path, &text, &workspace_root);
+    }
+
     Ok(app)
 }
 
