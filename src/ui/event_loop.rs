@@ -150,7 +150,7 @@ impl App {
 
         match key_event.code {
             KeyCode::Char(ch) if !key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-                self.insert_text(&ch.to_string(), true);
+                self.handle_editor_char_input(ch);
                 if self.focus == FocusTarget::Editor {
                     self.trigger_completion();
                     self.show_signature_help();

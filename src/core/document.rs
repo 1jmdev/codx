@@ -129,6 +129,21 @@ impl Document {
         }
     }
 
+    pub fn previous_char(&self, cursor: Cursor) -> Option<char> {
+        if cursor.column > 0 {
+            return self
+                .raw_line_text(cursor.line)
+                .chars()
+                .nth(cursor.column - 1);
+        }
+
+        if cursor.line == 0 {
+            return None;
+        }
+
+        Some('\n')
+    }
+
     pub fn move_vertically(&self, cursor: Cursor, delta: isize) -> Cursor {
         let target_line = if delta < 0 {
             cursor.line.saturating_sub(delta.unsigned_abs())

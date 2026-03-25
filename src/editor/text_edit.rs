@@ -17,6 +17,31 @@ fn cursor_to_point(document: &crate::core::Document, cursor: Cursor) -> Point {
 }
 
 impl App {
+    pub(crate) fn handle_editor_char_input(&mut self, typed: char) {
+        if is_auto_close_char(typed) {
+            if self.selection_text().is_none() && self.char_at_cursor() == Some(typed) {
+                self.move_right(false);
+                return;
+            }
+        }
+
+        if is_symmetric_pair_char(typed) && self.selection_text().is_none() {
+            let before = self.same_char_run_before_cursor(typed);
+            let after = self.same_char_run_after_cursor(typed);
+            if (before > 0 && after == 0) || (before + after) % 2 == 1 {
+                self.insert_text(&typed.to_string(), true);
+                return;
+            }
+        }
+
+        if let Some((open, close)) = matching_pair(typed) {
+            self.insert_surround_pair(open, close);
+            return;
+        }
+
+        self.insert_text(&typed.to_string(), true);
+    }
+
     pub(crate) fn insert_text(&mut self, text: &str, allow_coalesce: bool) {
         let selection = self.active_pane().selection();
         let coalesce = allow_coalesce
@@ -35,6 +60,21 @@ impl App {
         }
 
         let cursor = self.active_pane().cursor();
+        if let Some(previous) = self.active_document().previous_char(cursor) {
+            if let Some(next) = self.char_at_cursor() {
+                if matching_pair(previous).map(|(_, close)| close) == Some(next) {
+                    let after_next = self.active_document().next_position(cursor);
+                    self.apply_edit(
+                        self.active_document().previous_position(cursor),
+                        after_next,
+                        "",
+                        false,
+                    );
+                    return;
+                }
+            }
+        }
+
         let previous = self.active_document().previous_position(cursor);
         if previous != cursor {
             self.apply_edit(previous, cursor, "", false);
@@ -174,6 +214,75 @@ impl App {
             .unwrap_or((self.active_pane().cursor(), self.active_pane().cursor()))
     }
 
+    fn insert_surround_pair(&mut self, open: char, close: char) {
+        if let Some((start, end)) = self.active_pane().selection().normalized() {
+            let selected_text = self.active_document().slice_string(start, end);
+            let mut wrapped = String::with_capacity(selected_text.len() + 2);
+            wrapped.push(open);
+            wrapped.push_str(&selected_text);
+            wrapped.push(close);
+            self.apply_edit(start, end, &wrapped, false);
+            let caret = self.active_document().advance_cursor(start, &wrapped);
+            if let Some(pane) = self.layout.pane_mut(self.active_pane_id()) {
+                pane.set_cursor(caret);
+                pane.set_selection(Selection::caret(caret));
+            }
+            self.ensure_cursor_visible();
+            return;
+        }
+
+        let mut pair = String::with_capacity(2);
+        pair.push(open);
+        pair.push(close);
+        self.insert_text(&pair, true);
+
+        let cursor = self.active_pane().cursor();
+        let target = self.active_document().previous_position(cursor);
+        if let Some(pane) = self.layout.pane_mut(self.active_pane_id()) {
+            pane.set_cursor(target);
+            pane.set_selection(Selection::caret(target));
+        }
+        self.ensure_cursor_visible();
+    }
+
+    fn char_at_cursor(&self) -> Option<char> {
+        let cursor = self.active_pane().cursor();
+        let line = self.active_document().raw_line_text(cursor.line);
+        line.chars().nth(cursor.column)
+    }
+
+    fn same_char_run_before_cursor(&self, needle: char) -> usize {
+        let cursor = self.active_pane().cursor();
+        let chars: Vec<char> = self
+            .active_document()
+            .raw_line_text(cursor.line)
+            .chars()
+            .collect();
+        let mut index = cursor.column.min(chars.len());
+        let mut count = 0usize;
+        while index > 0 && chars[index - 1] == needle {
+            count += 1;
+            index -= 1;
+        }
+        count
+    }
+
+    fn same_char_run_after_cursor(&self, needle: char) -> usize {
+        let cursor = self.active_pane().cursor();
+        let chars: Vec<char> = self
+            .active_document()
+            .raw_line_text(cursor.line)
+            .chars()
+            .collect();
+        let mut index = cursor.column;
+        let mut count = 0usize;
+        while index < chars.len() && chars[index] == needle {
+            count += 1;
+            index += 1;
+        }
+        count
+    }
+
     pub(crate) fn insert_newline_with_indent(&mut self) {
         let cursor = self.active_pane().cursor();
         let buffer_id = self.active_buffer_id;
@@ -237,4 +346,24 @@ impl App {
             self.insert_text(&insert, false);
         }
     }
+}
+
+fn matching_pair(open: char) -> Option<(char, char)> {
+    match open {
+        '(' => Some(('(', ')')),
+        '[' => Some(('[', ']')),
+        '{' => Some(('{', '}')),
+        '"' => Some(('"', '"')),
+        '\'' => Some(('\'', '\'')),
+        '`' => Some(('`', '`')),
+        _ => None,
+    }
+}
+
+fn is_auto_close_char(ch: char) -> bool {
+    matches!(ch, ')' | ']' | '}' | '"' | '\'' | '`')
+}
+
+fn is_symmetric_pair_char(ch: char) -> bool {
+    matches!(ch, '"' | '\'' | '`')
 }
