@@ -6,66 +6,66 @@ impl App {
         let target = self
             .active_document()
             .previous_position(self.active_pane().cursor());
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn move_right(&mut self, extend: bool) {
         let target = self
             .active_document()
             .next_position(self.active_pane().cursor());
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn move_up(&mut self, extend: bool) {
         let target = self
             .active_document()
             .move_vertically(self.active_pane().cursor(), -1);
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, true);
     }
 
     pub(crate) fn move_down(&mut self, extend: bool) {
         let target = self
             .active_document()
             .move_vertically(self.active_pane().cursor(), 1);
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, true);
     }
 
     pub(crate) fn move_line_start(&mut self, extend: bool) {
         let target = self
             .active_document()
             .line_start(self.active_pane().cursor().line);
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn move_line_end(&mut self, extend: bool) {
         let target = self
             .active_document()
             .line_end(self.active_pane().cursor().line);
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn move_word_left(&mut self, extend: bool) {
         let target = self
             .active_document()
             .previous_word_start(self.active_pane().cursor());
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn move_word_right(&mut self, extend: bool) {
         let target = self
             .active_document()
             .next_word_start(self.active_pane().cursor());
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn move_document_start(&mut self, extend: bool) {
-        self.update_cursor(Cursor::default(), extend);
+        self.update_cursor(Cursor::default(), extend, false);
     }
 
     pub(crate) fn move_document_end(&mut self, extend: bool) {
         let last_line = self.active_document().last_line_index();
         let target = self.active_document().line_end(last_line);
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, false);
     }
 
     pub(crate) fn page_up(&mut self, extend: bool) {
@@ -73,7 +73,7 @@ impl App {
         let target = self
             .active_document()
             .move_vertically(self.active_pane().cursor(), -(page_height as isize));
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, true);
     }
 
     pub(crate) fn page_down(&mut self, extend: bool) {
@@ -81,11 +81,15 @@ impl App {
         let target = self
             .active_document()
             .move_vertically(self.active_pane().cursor(), page_height as isize);
-        self.update_cursor(target, extend);
+        self.update_cursor(target, extend, true);
     }
 
-    fn update_cursor(&mut self, target: Cursor, extend: bool) {
-        let preferred = self.active_document().display_column(target);
+    fn update_cursor(&mut self, target: Cursor, extend: bool, preserve_preferred: bool) {
+        let preferred = if preserve_preferred {
+            target.preferred_column
+        } else {
+            self.active_document().display_column(target)
+        };
         let selection = if extend {
             self.active_pane()
                 .selection()
