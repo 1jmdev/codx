@@ -23,6 +23,8 @@ struct ServerTomlConfig {
     command: String,
     #[serde(default)]
     args: Vec<String>,
+    #[serde(default)]
+    initialization_options: Option<serde_json::Value>,
 }
 
 pub fn load_server_config(workspace_root: &Path) -> HashMap<LanguageId, ServerConfig> {
@@ -48,6 +50,7 @@ pub fn load_server_config(workspace_root: &Path) -> HashMap<LanguageId, ServerCo
                 language_id: language_name,
                 command: server.command,
                 args: server.args,
+                initialization_options: server.initialization_options,
             },
         );
     }
@@ -83,6 +86,20 @@ fn default_servers() -> HashMap<LanguageId, ServerConfig> {
             language_id: String::from("rust"),
             command: String::from("rust-analyzer"),
             args: Vec::new(),
+            initialization_options: Some(serde_json::json!({
+                "cargo": {
+                    "autoreload": true,
+                    "buildScripts": {
+                        "enable": true
+                    }
+                },
+                "procMacro": {
+                    "enable": true
+                },
+                "checkOnSave": {
+                    "enable": true
+                }
+            })),
         },
     );
     map.insert(
@@ -91,6 +108,7 @@ fn default_servers() -> HashMap<LanguageId, ServerConfig> {
             language_id: String::from("python"),
             command: String::from("pyright-langserver"),
             args: vec![String::from("--stdio")],
+            initialization_options: None,
         },
     );
     map.insert(
@@ -99,6 +117,7 @@ fn default_servers() -> HashMap<LanguageId, ServerConfig> {
             language_id: String::from("typescript"),
             command: String::from("typescript-language-server"),
             args: vec![String::from("--stdio")],
+            initialization_options: None,
         },
     );
     map.insert(
@@ -107,6 +126,7 @@ fn default_servers() -> HashMap<LanguageId, ServerConfig> {
             language_id: String::from("javascript"),
             command: String::from("typescript-language-server"),
             args: vec![String::from("--stdio")],
+            initialization_options: None,
         },
     );
     map

@@ -18,6 +18,7 @@ use crate::lsp::client::{RpcResponse, ServerConfig};
 pub struct LspClient {
     pub language_id: String,
     pub root_path: PathBuf,
+    pub initialization_options: Option<Value>,
     pub capabilities: NegotiatedCapabilities,
     pub initialized: bool,
     pub(super) child: Child,
@@ -40,6 +41,7 @@ impl LspClient {
             "processId": std::process::id(),
             "rootUri": file_uri(&self.root_path),
             "capabilities": default_client_capabilities(),
+            "initializationOptions": self.initialization_options.clone().unwrap_or(Value::Null),
             "workspaceFolders": [
                 {
                     "uri": file_uri(&self.root_path),
@@ -58,6 +60,15 @@ impl LspClient {
         let initialized_value = serde_json::to_value(InitializedParams {})
             .map_err(|error| format!("failed to serialize initialized params: {error}"))?;
         self.notify("initialized", initialized_value).await?;
+        if let Some(options) = self.initialization_options.clone() {
+            self.notify(
+                "workspace/didChangeConfiguration",
+                serde_json::json!({
+                    "settings": options
+                }),
+            )
+            .await?;
+        }
         self.initialized = true;
         Ok(())
     }
@@ -119,15 +130,6 @@ impl LspClient {
         }
 
         std::mem::take(&mut self.queued_notifications)
-    }
-
-    pub async fn try_read_notification(&mut self) -> Option<Value> {
-        let mut drained = self.drain_notifications();
-        if drained.is_empty() {
-            None
-        } else {
-            Some(drained.remove(0))
-        }
     }
 
     fn response_to_result(method: &str, response: RpcResponse) -> Result<Value, String> {

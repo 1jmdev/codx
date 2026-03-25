@@ -110,9 +110,6 @@ impl LspWorkspace {
         let Some(language) = language_for_path(path) else {
             return Vec::new();
         };
-        if !self.progress.done {
-            return Vec::new();
-        }
         let Some(client) = self.clients.get_mut(&language) else {
             return Vec::new();
         };
@@ -161,9 +158,6 @@ impl LspWorkspace {
     pub fn did_open(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
-        if !self.progress.done {
-            return;
-        }
         let Some(language) = language_for_path(path) else {
             return;
         };
@@ -188,9 +182,6 @@ impl LspWorkspace {
     pub fn did_change(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
-        if !self.progress.done {
-            return;
-        }
         let Some(language) = language_for_path(path) else {
             return;
         };
@@ -217,9 +208,6 @@ impl LspWorkspace {
     pub fn did_save(&mut self, path: &Path, text: &str, workspace_root: &Path) {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
-        if !self.progress.done {
-            return;
-        }
         let Some(language) = language_for_path(path) else {
             return;
         };
@@ -571,15 +559,9 @@ impl LspWorkspace {
     }
 
     pub fn poll_server_messages(&mut self) {
-        let Some(runtime) = self.runtime.as_mut() else {
-            return;
-        };
         let mut updates = Vec::new();
         for client in self.clients.values_mut() {
-            let message = runtime.block_on(client.try_read_notification());
-            if let Some(message) = message {
-                updates.push(message);
-            }
+            updates.extend(client.drain_notifications());
         }
         for update in updates {
             if let Some(method) = update.get("method").and_then(serde_json::Value::as_str) {

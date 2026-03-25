@@ -30,6 +30,7 @@ pub(super) fn launch_client(config: &ServerConfig, root_path: &Path) -> Result<L
     Ok(LspClient {
         language_id: config.language_id.clone(),
         root_path: root_path.to_path_buf(),
+        initialization_options: config.initialization_options.clone(),
         capabilities: default_capabilities(),
         initialized: false,
         child,
