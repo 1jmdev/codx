@@ -24,16 +24,10 @@ impl App {
             return;
         };
         let cursor = self.active_pane().cursor();
-        if let Some(contents) =
-            self.lsp
-                .request_hover(&path, &self.workspace_root, cursor.line, cursor.column)
+        if !self
+            .lsp
+            .request_hover(&path, &self.workspace_root, cursor.line, cursor.column)
         {
-            self.lsp.hover.visible = true;
-            self.lsp.hover.title = String::from("Hover");
-            self.lsp.hover.contents = contents;
-            self.lsp.hover.line = cursor.line;
-            self.lsp.hover.column = cursor.column;
-        } else {
             self.set_message("No hover information", MessageKind::Info);
         }
     }

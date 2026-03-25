@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Child, ChildStdin};
-use std::sync::mpsc::Receiver;
+use std::process::Child;
+use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 
 use lsp_types::{InitializeResult, InitializedParams};
@@ -22,7 +22,7 @@ pub struct LspClient {
     pub capabilities: NegotiatedCapabilities,
     pub initialized: bool,
     pub(super) child: Child,
-    pub(super) stdin: ChildStdin,
+    pub(super) sender: Sender<String>,
     pub(super) receiver: Receiver<IncomingMessage>,
     pub(super) queued_notifications: Vec<Value>,
     pub(super) queued_responses: HashMap<u64, RpcResponse>,
@@ -74,18 +74,14 @@ impl LspClient {
     }
 
     pub async fn request(&mut self, method: &str, params: Value) -> Result<Value, String> {
-        let id = self.next_request_id;
-        self.next_request_id += 1;
-        let payload = super::requests::build_request(id, method, params);
-        self.write_jsonrpc(&payload.to_string())
-            .map_err(|error| format!("write request failed: {error}"))?;
+        let id = self.send_request(method, params)?;
 
         if let Some(response) = self.queued_responses.remove(&id) {
-            return Self::response_to_result(method, response);
+            return response.into_result(method);
         }
 
         loop {
-            let incoming = self.receiver.recv_timeout(Duration::from_millis(600));
+            let incoming = self.receiver.recv_timeout(Duration::from_secs(5));
             let incoming = match incoming {
                 Ok(message) => message,
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
@@ -103,12 +99,21 @@ impl LspClient {
                 }
                 IncomingMessage::Response(response) => {
                     if response.id == id {
-                        return Self::response_to_result(method, response);
+                        return response.into_result(method);
                     }
                     self.queued_responses.insert(response.id, response);
                 }
             }
         }
+    }
+
+    pub fn send_request(&mut self, method: &str, params: Value) -> Result<u64, String> {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
+        let payload = super::requests::build_request(id, method, params);
+        self.write_jsonrpc(&payload.to_string())
+            .map_err(|error| format!("write request failed: {error}"))?;
+        Ok(id)
     }
 
     pub async fn notify(&mut self, method: &str, params: Value) -> Result<(), String> {
@@ -118,6 +123,17 @@ impl LspClient {
     }
 
     pub fn drain_notifications(&mut self) -> Vec<Value> {
+        self.pump_incoming();
+
+        std::mem::take(&mut self.queued_notifications)
+    }
+
+    pub fn drain_responses(&mut self) -> Vec<RpcResponse> {
+        self.pump_incoming();
+        self.queued_responses.drain().map(|(_, response)| response).collect()
+    }
+
+    fn pump_incoming(&mut self) {
         while let Ok(incoming) = self.receiver.try_recv() {
             match incoming {
                 IncomingMessage::Notification(notification) => {
@@ -128,25 +144,20 @@ impl LspClient {
                 }
             }
         }
-
-        std::mem::take(&mut self.queued_notifications)
-    }
-
-    fn response_to_result(method: &str, response: RpcResponse) -> Result<Value, String> {
-        if let Some(result) = response.result {
-            return Ok(result);
-        }
-        if let Some(error) = response.error {
-            return Err(format!("lsp request {method} failed: {error}"));
-        }
-        Err(format!("lsp request {method} returned no result"))
     }
 
     fn write_jsonrpc(&mut self, payload: &str) -> io::Result<()> {
-        let header = format!("Content-Length: {}\r\n\r\n", payload.len());
-        self.stdin.write_all(header.as_bytes())?;
-        self.stdin.write_all(payload.as_bytes())?;
-        self.stdin.flush()
+        let mut message = String::with_capacity(payload.len() + 32);
+        message.push_str("Content-Length: ");
+        message.push_str(&payload.len().to_string());
+        message.push_str("\r\n\r\n");
+        message.push_str(payload);
+        self.sender.send(message).map_err(|error| {
+            io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                format!("language server writer closed: {error}"),
+            )
+        })
     }
 }
 

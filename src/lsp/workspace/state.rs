@@ -15,12 +15,31 @@ use crate::lsp::workspace::discovery::WorkspaceDiscovery;
 use crate::syntax::{language_for_path, LanguageId};
 use crate::ui::{PickerItem, PickerState};
 
+#[derive(Debug, Clone)]
+struct PendingRequest {
+    language: LanguageId,
+    request_id: u64,
+    path: std::path::PathBuf,
+    version: i32,
+    line: usize,
+    character: usize,
+}
+
+#[derive(Debug, Clone)]
+struct PendingCompletionRequest {
+    request: PendingRequest,
+    trigger_column: usize,
+}
+
 #[derive(Debug, Default)]
 pub struct LspWorkspace {
     runtime: Option<Runtime>,
     clients: HashMap<LanguageId, LspClient>,
     servers: HashMap<LanguageId, crate::lsp::client::ServerConfig>,
     open_versions: HashMap<std::path::PathBuf, i32>,
+    pending_completion: Option<PendingCompletionRequest>,
+    pending_hover: Option<PendingRequest>,
+    pending_signature: Option<PendingRequest>,
     diagnostics: DiagnosticStore,
     discovery: WorkspaceDiscovery,
     workspace_bootstrapped: bool,
@@ -41,6 +60,9 @@ impl LspWorkspace {
             clients: HashMap::new(),
             servers,
             open_versions: HashMap::new(),
+            pending_completion: None,
+            pending_hover: None,
+            pending_signature: None,
             diagnostics: DiagnosticStore::default(),
             discovery,
             workspace_bootstrapped: false,
@@ -104,21 +126,21 @@ impl LspWorkspace {
         workspace_root: &Path,
         line: usize,
         character: usize,
-    ) -> Vec<CompletionItemView> {
+    ) {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
+        self.completion.close();
+        self.pending_completion = None;
         let Some(language) = language_for_path(path) else {
-            return Vec::new();
+            return;
         };
+        let version = self.document_version(path);
         let Some(client) = self.clients.get_mut(&language) else {
-            return Vec::new();
+            return;
         };
         if !client.capabilities.completion {
-            return Vec::new();
+            return;
         }
-        let Some(runtime) = self.runtime.as_mut() else {
-            return Vec::new();
-        };
 
         let params = serde_json::json!({
             "textDocument": { "uri": file_uri(path) },
@@ -126,11 +148,21 @@ impl LspWorkspace {
             "context": { "triggerKind": 1 }
         });
 
-        let value = match runtime.block_on(client.request("textDocument/completion", params)) {
-            Ok(value) => value,
-            Err(_) => return Vec::new(),
+        let Ok(request_id) = client.send_request("textDocument/completion", params) else {
+            return;
         };
-        parse_completion_items(value)
+
+        self.pending_completion = Some(PendingCompletionRequest {
+            request: PendingRequest {
+                language,
+                request_id,
+                path: path.to_path_buf(),
+                version,
+                line,
+                character,
+            },
+            trigger_column: character,
+        });
     }
 }
 
@@ -152,6 +184,16 @@ fn parse_position(value: &serde_json::Value) -> (usize, usize) {
         .and_then(serde_json::Value::as_u64)
         .unwrap_or(0) as usize;
     (line, character)
+}
+
+impl LspWorkspace {
+    fn document_version(&self, path: &Path) -> i32 {
+        self.open_versions.get(path).copied().unwrap_or(1)
+    }
+
+    fn request_still_current(&self, request: &PendingRequest) -> bool {
+        self.document_version(&request.path) == request.version
+    }
 }
 
 impl LspWorkspace {
@@ -230,37 +272,39 @@ impl LspWorkspace {
         workspace_root: &Path,
         line: usize,
         character: usize,
-    ) -> Option<String> {
+    ) -> bool {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
+        self.pending_hover = None;
         if !self.progress.done {
-            return None;
+            return false;
         }
-        let language = language_for_path(path)?;
-        let client = self.clients.get_mut(&language)?;
+        let Some(language) = language_for_path(path) else {
+            return false;
+        };
+        let version = self.document_version(path);
+        let Some(client) = self.clients.get_mut(&language) else {
+            return false;
+        };
         if !client.capabilities.hover {
-            return None;
+            return false;
         }
-        let runtime = self.runtime.as_mut()?;
         let params = serde_json::json!({
             "textDocument": { "uri": file_uri(path) },
             "position": { "line": line, "character": character }
         });
-        let value = runtime
-            .block_on(client.request("textDocument/hover", params))
-            .ok()?;
-        if let Some(text) = value
-            .get("contents")
-            .and_then(serde_json::Value::as_str)
-            .map(ToOwned::to_owned)
-        {
-            return Some(text);
-        }
-        value
-            .get("contents")
-            .and_then(|v| v.get("value"))
-            .and_then(serde_json::Value::as_str)
-            .map(ToOwned::to_owned)
+        let Ok(request_id) = client.send_request("textDocument/hover", params) else {
+            return false;
+        };
+        self.pending_hover = Some(PendingRequest {
+            language,
+            request_id,
+            path: path.to_path_buf(),
+            version,
+            line,
+            character,
+        });
+        true
     }
 
     pub fn request_signature(
@@ -269,37 +313,39 @@ impl LspWorkspace {
         workspace_root: &Path,
         line: usize,
         character: usize,
-    ) -> Option<(String, Option<u32>)> {
+    ) {
         self.bootstrap_workspace(workspace_root);
         self.ensure_client_for_path(path, workspace_root);
+        self.signature.clear();
+        self.pending_signature = None;
         if !self.progress.done {
-            return None;
+            return;
         }
-        let language = language_for_path(path)?;
-        let client = self.clients.get_mut(&language)?;
+        let Some(language) = language_for_path(path) else {
+            return;
+        };
+        let version = self.document_version(path);
+        let Some(client) = self.clients.get_mut(&language) else {
+            return;
+        };
         if !client.capabilities.signature_help {
-            return None;
+            return;
         }
-        let runtime = self.runtime.as_mut()?;
         let params = serde_json::json!({
             "textDocument": { "uri": file_uri(path) },
             "position": { "line": line, "character": character }
         });
-        let value = runtime
-            .block_on(client.request("textDocument/signatureHelp", params))
-            .ok()?;
-        let sigs = value.get("signatures")?.as_array()?;
-        let first = sigs.first()?;
-        let label = first
-            .get("label")
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or_default()
-            .to_owned();
-        let active = value
-            .get("activeParameter")
-            .and_then(serde_json::Value::as_u64)
-            .map(|v| v as u32);
-        Some((label, active))
+        let Ok(request_id) = client.send_request("textDocument/signatureHelp", params) else {
+            return;
+        };
+        self.pending_signature = Some(PendingRequest {
+            language,
+            request_id,
+            path: path.to_path_buf(),
+            version,
+            line,
+            character,
+        });
     }
 
     pub fn goto_definition(
@@ -560,8 +606,15 @@ impl LspWorkspace {
 
     pub fn poll_server_messages(&mut self) {
         let mut updates = Vec::new();
-        for client in self.clients.values_mut() {
+        let mut responses = Vec::new();
+        for (language, client) in self.clients.iter_mut() {
             updates.extend(client.drain_notifications());
+            responses.extend(
+                client
+                    .drain_responses()
+                    .into_iter()
+                    .map(|response| (*language, response)),
+            );
         }
         for update in updates {
             if let Some(method) = update.get("method").and_then(serde_json::Value::as_str) {
@@ -621,6 +674,67 @@ impl LspWorkspace {
                         }
                     }
                     _ => {}
+                }
+            }
+        }
+
+        for (language, response) in responses {
+            if self.pending_completion.as_ref().is_some_and(|pending| {
+                pending.request.language == language && pending.request.request_id == response.id
+            }) {
+                let Some(pending) = self.pending_completion.take() else {
+                    continue;
+                };
+                if !self.request_still_current(&pending.request) {
+                    continue;
+                }
+                if let Ok(value) = response.into_result("textDocument/completion") {
+                    self.completion
+                        .set_items(pending.trigger_column, parse_completion_items(value));
+                }
+                continue;
+            }
+
+            if self.pending_hover.as_ref().is_some_and(|pending| {
+                pending.language == language && pending.request_id == response.id
+            }) {
+                let Some(pending) = self.pending_hover.take() else {
+                    continue;
+                };
+                if !self.request_still_current(&pending) {
+                    continue;
+                }
+                if let Ok(value) = response.into_result("textDocument/hover") {
+                    if let Some(contents) = parse_hover_contents(&value) {
+                        self.hover.visible = true;
+                        self.hover.title = String::from("Hover");
+                        self.hover.contents = contents;
+                        self.hover.line = pending.line;
+                        self.hover.column = pending.character;
+                    } else {
+                        self.hover.clear();
+                    }
+                }
+                continue;
+            }
+
+            if self.pending_signature.as_ref().is_some_and(|pending| {
+                pending.language == language && pending.request_id == response.id
+            }) {
+                let Some(pending) = self.pending_signature.take() else {
+                    continue;
+                };
+                if !self.request_still_current(&pending) {
+                    continue;
+                }
+                if let Ok(value) = response.into_result("textDocument/signatureHelp") {
+                    if let Some((label, active_parameter)) = parse_signature_help(&value) {
+                        self.signature.visible = true;
+                        self.signature.label = label;
+                        self.signature.active_parameter = active_parameter;
+                    } else {
+                        self.signature.clear();
+                    }
                 }
             }
         }
@@ -707,6 +821,36 @@ fn position_to_byte(text: &str, pos: Position) -> Option<usize> {
     } else {
         None
     }
+}
+
+fn parse_hover_contents(value: &serde_json::Value) -> Option<String> {
+    if let Some(text) = value
+        .get("contents")
+        .and_then(serde_json::Value::as_str)
+        .map(ToOwned::to_owned)
+    {
+        return Some(text);
+    }
+    value
+        .get("contents")
+        .and_then(|contents| contents.get("value"))
+        .and_then(serde_json::Value::as_str)
+        .map(ToOwned::to_owned)
+}
+
+fn parse_signature_help(value: &serde_json::Value) -> Option<(String, Option<u32>)> {
+    let sigs = value.get("signatures")?.as_array()?;
+    let first = sigs.first()?;
+    let label = first
+        .get("label")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default()
+        .to_owned();
+    let active_parameter = value
+        .get("activeParameter")
+        .and_then(serde_json::Value::as_u64)
+        .map(|value| value as u32);
+    Some((label, active_parameter))
 }
 
 fn parse_completion_items(value: serde_json::Value) -> Vec<CompletionItemView> {

@@ -5,6 +5,7 @@ use std::process::{Command, Stdio};
 use crate::lsp::capabilities::NegotiatedCapabilities;
 use crate::lsp::client::response_loop::spawn_response_loop;
 use crate::lsp::client::session::LspClient;
+use crate::lsp::client::write_loop::spawn_write_loop;
 use crate::lsp::client::ServerConfig;
 
 pub(super) fn launch_client(config: &ServerConfig, root_path: &Path) -> Result<LspClient, String> {
@@ -25,6 +26,7 @@ pub(super) fn launch_client(config: &ServerConfig, root_path: &Path) -> Result<L
         .take()
         .ok_or_else(|| String::from("missing language server stdout"))?;
 
+    let sender = spawn_write_loop(stdin);
     let receiver = spawn_response_loop(stdout);
 
     Ok(LspClient {
@@ -34,7 +36,7 @@ pub(super) fn launch_client(config: &ServerConfig, root_path: &Path) -> Result<L
         capabilities: default_capabilities(),
         initialized: false,
         child,
-        stdin,
+        sender,
         receiver,
         queued_notifications: Vec::new(),
         queued_responses: HashMap::new(),

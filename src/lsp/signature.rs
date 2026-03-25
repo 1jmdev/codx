@@ -13,24 +13,15 @@ impl SignatureHelpView {
     }
 }
 
-use crate::app::{App, MessageKind};
+use crate::app::App;
 
 impl App {
     pub(crate) fn show_signature_help(&mut self) {
-        self.lsp.signature.clear();
         let Some(path) = self.active_document().path().map(|path| path.to_path_buf()) else {
             return;
         };
         let cursor = self.active_pane().cursor();
-        if let Some((label, active)) =
-            self.lsp
-                .request_signature(&path, &self.workspace_root, cursor.line, cursor.column)
-        {
-            self.lsp.signature.visible = true;
-            self.lsp.signature.label = label;
-            self.lsp.signature.active_parameter = active;
-        } else {
-            self.set_message("No signature help", MessageKind::Info);
-        }
+        self.lsp
+            .request_signature(&path, &self.workspace_root, cursor.line, cursor.column);
     }
 }

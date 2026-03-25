@@ -7,10 +7,8 @@ impl App {
             return;
         };
         let cursor = self.active_pane().cursor();
-        let items =
-            self.lsp
-                .request_completion(&path, &self.workspace_root, cursor.line, cursor.column);
-        self.lsp.completion.set_items(cursor.column, items);
+        self.lsp
+            .request_completion(&path, &self.workspace_root, cursor.line, cursor.column);
     }
 
     pub(crate) fn accept_completion(&mut self) {
